@@ -1,0 +1,3 @@
+To run, use
+$ javac BarCodes.java
+$ java BarCodes <args>
