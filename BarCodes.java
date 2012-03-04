@@ -11,6 +11,10 @@ class BarCodes {
     */
     private static class Encoding {
         public byte[] bytes;
+
+        public Encoding() {
+            bytes = new byte[5];
+        }
         
         public Encoding(byte[] bytes) {
             this.bytes = bytes;
@@ -48,7 +52,7 @@ class BarCodes {
         encodings = Collections.unmodifiableMap(map);
     }
     
-    static int[] argsToInputs(String[] args) {
+    private static int[] argsToInputs(String[] args) {
         int numInputs = Integer.valueOf(args[0]);
         String[] strInputs = Arrays.copyOfRange(args, 1, args.length);
         int[] intInputs = convertToIntArray(strInputs);
@@ -61,7 +65,7 @@ class BarCodes {
       Returns false if any of the provided input elements are
       outside of the range [1, 200].  Else returns true.
     */
-    static boolean checkRange(int[] inputs) {
+    private static boolean checkRange(int[] inputs) {
         for (int i = 0; i < inputs.length; i++) {
             if (inputs[i] < 1 || inputs[i] > 200) {
                 return false;
@@ -73,7 +77,7 @@ class BarCodes {
     /*
       convert an the original input ints to an array of 0's and 1's
     */
-    static byte[] convertToByteEncoding(int[] intInputs) {
+    private static byte[] convertToByteEncoding(int[] intInputs) {
         int[] ranges = getRanges(intInputs);
         // TODO: return null if either low range or high range deviates
         //       from their center by more than 5%
@@ -93,8 +97,25 @@ class BarCodes {
         return byteEncoded;
     }
 
+    /*
+      convert the given bytes to an array of the characters it encodes.
+      bytes arg is assumed to be in the correct order, and
+      composed only of character and separator bar encodings.
+      (start/stop encodings should be stripped)
+    */
     static char[] convertToCharacters(byte[] byteInputs) {
-        return null;
+        char[] characters = new char[byteInputs.length/6 + 1];
+        Encoding encoding = new Encoding();
+        for (int i = 0, j = 0; i < byteInputs.length; i += 6, j++) {
+            encoding.bytes = Arrays.copyOfRange(byteInputs, i, i + 5);
+            if (encodings.containsKey(encoding)) {
+                characters[j] = encodings.get(encoding);
+            } else {
+                // no character for this encoding
+                return null;
+            }
+        }
+        return characters;
     }
 
     /*
@@ -104,21 +125,22 @@ class BarCodes {
       If start/stop is correct, Return the byte input arg with the
       start and stop encodings trimmed.
     */
-    static byte[] trimStartStop(byte[] byteInputs) {
+    private static byte[] trimStartStop(byte[] byteInputs) {
         if (!checkStartStop(byteInputs)) {
             byteInputs = getReversedBytes(byteInputs);
             if (!checkStartStop(byteInputs)) {
                 return null;
             }
         }
-        return Arrays.copyOfRange(byteInputs, 4, byteInputs.length - 4);
+        // trim the start/stop bytes and the separators next to them
+        return Arrays.copyOfRange(byteInputs, 6, byteInputs.length - 6);
     }
 
     /*
       Return true if the first and last 5 bytes of the input encode
       for the start and stop characters respectively, else Return false
     */
-    static boolean checkStartStop(byte[] byteInputs) {
+    private static boolean checkStartStop(byte[] byteInputs) {
         byte[] start = Arrays.copyOfRange(byteInputs, 0, 5);
         byte[] stop = Arrays.copyOfRange(byteInputs, byteInputs.length - 5,
                                          byteInputs.length);
@@ -129,8 +151,8 @@ class BarCodes {
                 encodings.containsKey(stopEncoding) &&
                 encodings.get(stopEncoding) == 's');
     }
-    
-    static byte[] getReversedBytes(byte[] bytes) {
+
+    private static byte[] getReversedBytes(byte[] bytes) {
         byte[] reversed = new byte[bytes.length];
         for (int i = 0, j = bytes.length - 1; i < bytes.length; i++, j--) {
             reversed[i] = bytes[j];
@@ -147,7 +169,7 @@ class BarCodes {
       largest gap between adjacent elements, which is the gap between
       narrowMax and wideMin
     */
-    static int[] getRanges(int[] intInputs) {
+    private static int[] getRanges(int[] intInputs) {
         if (intInputs == null || intInputs.length == 0) return null;
         int[] sortedCpy = Arrays.copyOf(intInputs, intInputs.length);
         Arrays.sort(sortedCpy);
@@ -175,12 +197,21 @@ class BarCodes {
       Arg: string array (assumed to be integer strings)
       Returns: int array
     */
-    static int[] convertToIntArray(String[] stringArray) {
+    private static int[] convertToIntArray(String[] stringArray) {
         int[] intArray = new int[stringArray.length];
         for (int i = 0; i < intArray.length; i++) {
             intArray[i] = Integer.parseInt(stringArray[i]);
         }
         return intArray;
+    }
+
+    /*
+      Output 'bad code' error with the given case number,
+      and exit w/ error
+    */
+    private static void badCode(int caseNum) {
+        System.out.println("Case " + caseNum + ": bad code");
+        System.exit(1);
     }
 
     public static void run(String[] args) {
@@ -191,14 +222,10 @@ class BarCodes {
         byteEncodedInputs = trimStartStop(byteEncodedInputs);
         if (byteEncodedInputs == null) badCode(1);
         char[] characters = convertToCharacters(byteEncodedInputs);
-        //        if (characters == null) badCode(1);        
+        if (characters == null) badCode(1);
+        System.out.println(characters);
     }
     
-    static void badCode(int caseNum) {
-        System.out.println("Case " + caseNum + ": bad code");
-        System.exit(1);
-    }
-
     public static void main(String[] args) {
         // args.length must be >= 18
         // 1 int for number of regions
