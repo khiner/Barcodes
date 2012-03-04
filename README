@@ -19,3 +19,7 @@ optional arguments:
   -f FILE, --file FILE  Optionally print output to this file.
   -v, --verbose         print the values to command line
 
+
+A testing strategy:
+$ python CodeMaker.py [OTHER ARGS] --testFile expectedOutputs > actualOutputs
+$ diff expectedOutputs actualOutputs

@@ -80,27 +80,30 @@ def getValues(dirtyCode):
 
 parser = ArgumentParser()
 parser.add_argument('-r', '--randNum', type=int, default=0, help='if you want randomly generated cases, specify the number of cases.')
-parser.add_argument('-c', '--code', nargs='+', help="specify specific codes you'd like to test.  If random cases are also generated, these will be the first cases.")
-parser.add_argument('-f', '--file', help="Optionally print output to this file.")
-parser.add_argument('-v', '--verbose', action='store_true', help="print the values to command line")
+parser.add_argument('-c', '--code', nargs='+', help='specify specific codes you would like to test.  If random cases are also generated, these will be the first cases.')
+parser.add_argument('-f', '--file', help='optionally print output to the specified file.')
+parser.add_argument('-t', '--testFile', help='optionally print the expected java output to a the specified file')
+parser.add_argument('-v', '--verbose', action='store_true', help='print the values to command line')
 args = parser.parse_args()
 
 if not args.code and args.randNum == 0:
     args.randNum = 1 # send at least one output
     
 allValues = []
-if args.code:
+allCodes = []
+if args.code: # get input code from command line arg
     for code in args.code:
-        dirtyCode = code  # get input code from command line arg
-        values = getValues(dirtyCode)
+        allCodes.append(code)
+        values = getValues(code)
         values.insert(0,len(values))
         allValues.append(values)
     
 # generate the desired number of random cases.
 # if the random arg was not set, numRand will be 0
 for i in xrange(args.randNum):
-    dirtyCode = randCode()
-    values = getValues(dirtyCode)
+    code = randCode()
+    allCodes.append(code)
+    values = getValues(code)
     values.insert(0, len(values))
     allValues.append(values)
 
@@ -128,3 +131,9 @@ if args.file:
         f.write('\n')
     f.close()
 
+if args.testFile:
+    f = open(args.testFile, 'w')
+    # write expected output of each case to the file
+    for i in xrange(len(allCodes)):
+        f.write('Case ' + str(i + 1) + ': ' + allCodes[i] + '\n')
+    f.close()
