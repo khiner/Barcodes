@@ -12,8 +12,9 @@ The process is as follows:
     7. convert the bit string to a list of integer widths where each width is fudged by up to +/- 5%
     8. randomly reverse the integer list or not"""
 
-import sys,re,random
+import sys,re,random,string
 from subprocess import call
+from argparse import ArgumentParser
 
 # mapping from code char -> bit String
 bitStrs={"0":"00001","1":"10001","2":"01001","3":"11000","4":"00101", \
@@ -43,51 +44,87 @@ def K(code):                                # function to generate K check value
         k += (((n-i)%9) +1) * w(code[i-1])  # compute this step of sum, using (n-i) not (n-i +1) because n redefined to include C
     return k%11                             # return summation mod 11, K value
 
+def randCode():
+    length = random.randint(1,10)
+    return ''.join(random.choice(string.digits + '-') for i in xrange(length))
 
-#dirtyCode = sys.argv[1]  # get input code from command line arg
-dirtyCode = "---"
-code = re.sub(r"[^0-9\-]","",dirtyCode)     # remove invalid characters from input
+def getValues(dirtyCode):
+    code = re.sub(r"[^0-9\-]","",dirtyCode)     # remove invalid characters from input
 
-#compute and append C to code string
-codeC = code + str(C(code))
+    #compute and append C to code string
+    codeC = code + str(C(code))
 
-#compute and append K to code string
-codeCK = codeC + str(K(codeC))
+    #compute and append K to code string
+    codeCK = codeC + str(K(codeC))
 
-#compute the bitstring for this code
-codeCKBitStr = bitStrs["Start"] + "0"   # begin with start char and spacer
-for char in codeCK:                     # loop over all chars in code
-    codeCKBitStr += bitStrs[char] + "0" # append bitstring for this char and spacer
-codeCKBitStr += bitStrs["Stop"]         # append stop character
+    #compute the bitstring for this code
+    codeCKBitStr = bitStrs["Start"] + "0"   # begin with start char and spacer
+    for char in codeCK:                     # loop over all chars in code
+        codeCKBitStr += bitStrs[char] + "0" # append bitstring for this char and spacer
+    codeCKBitStr += bitStrs["Stop"]         # append stop character
 
-wide = random.randint(1,200) # get some value for wide width
-narrow = int(wide/2.0)       # compute narrow width
-width = {"0":narrow,"1":wide} # mapping bit character -> bar width
+    wide = random.randint(1,200) # get some value for wide width
+    narrow = int(wide/2.0)       # compute narrow width
+    width = {"0":narrow,"1":wide} # mapping bit character -> bar width
 
-fudge = lambda val: int(val+val*(-0.05+0.1*random.random())) # function to apply random error to a value, +/- 5%
-values = [] # list to hold integer values for final representation
+    fudge = lambda val: int(val+val*(-0.05+0.1*random.random())) # function to apply random error to a value, +/- 5%
+    values = [] # list to hold integer values for final representation
 
-for b in codeCKBitStr:              #loop over bits characters in code bit string
-    values.append(fudge(width[b]))  #get width for this bit, fudge it, then append to the list
+    for b in codeCKBitStr:              #loop over bits characters in code bit string
+        values.append(fudge(width[b]))  #get width for this bit, fudge it, then append to the list
 
-if random.random() > 0.50:          #the code could be backwards, reverse it half the time
-    values.reverse()
+    if random.random() > 0.50:          #the code could be backwards, reverse it half the time
+        values.reverse()
+        
+    return values
+
+parser = ArgumentParser()
+parser.add_argument('-r', '--randNum', type=int, default=0, help='if you want randomly generated cases, specify the number of cases.')
+parser.add_argument('-c', '--code', nargs='+', help="specify specific codes you'd like to test.  If random cases are also generated, these will be the first cases.")
+parser.add_argument('-f', '--file', help="Optionally print output to this file.")
+parser.add_argument('-v', '--verbose', action='store_true', help="print the values to command line")
+args = parser.parse_args()
+
+if not args.code and args.randNum == 0:
+    args.randNum = 1 # send at least one output
+    
+allValues = []
+if args.code:
+    for code in args.code:
+        dirtyCode = code  # get input code from command line arg
+        values = getValues(dirtyCode)
+        values.insert(0,len(values))
+        allValues.append(values)
+    
+# generate the desired number of random cases.
+# if the random arg was not set, numRand will be 0
+for i in xrange(args.randNum):
+    dirtyCode = randCode()
+    values = getValues(dirtyCode)
+    values.insert(0, len(values))
+    allValues.append(values)
 
 cmd = ["java"]
 cmd.append("BarCodes")
-cmd.append(str(len(values)))
-cmd += [str(x) for x in values]
+for values in allValues:
+    cmd += [str(v) for v in values]
 call(cmd)
 
-# uncomment for command-line output
-# print len(values)
-# for v in values:    
-#      print str(v) + " ",
+# print to command line as well if verbose option is set
+if args.verbose:
+    for values in allValues:
+        print str(values[0])
+        for v in values[1:]:    
+            print str(v),
+        print ''
 
-# uncomment for file ouput to filename given by second cmd line arg
-# f = open(sys.argv[2])
-# f.writeline(len(values))
-# for v in values:
-#    f.write(str(v) + " ")
-# f.close()
+# file ouput if filename given in command line
+if args.file:
+    f = open(args.file, 'w')
+    for values in allValues:
+        f.write(str(values[0]) + '\n')
+        for v in values[1:]:
+            f.write(str(v) + " ")
+        f.write('\n')
+    f.close()
 

@@ -5,4 +5,17 @@ To run with custom input,
 $ java BarCodes <args>
 
 To run with automatically generated test cases,
-$ python CodeMaker.py
+$ python CodeMaker.py [-h] [-r RANDNUM] [-c CODE [CODE ...]] [-f FILE] [-v]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -r RANDNUM, --randNum RANDNUM
+                        if you want randomly generated cases, specify the
+                        number of cases.
+  -c CODE [CODE ...], --code CODE [CODE ...]
+                        specify specific codes you'd like to test. If random
+                        cases are also generated, these will be the first
+                        cases.
+  -f FILE, --file FILE  Optionally print output to this file.
+  -v, --verbose         print the values to command line
+
