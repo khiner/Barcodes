@@ -71,11 +71,15 @@ def getValues(dirtyCode):
         codeCKBitStr += bitStrs[char] + "0" # append bitstring for this char and spacer
     codeCKBitStr += bitStrs["Stop"]         # append stop character
 
-    wide = random.randint(1,200) # get some value for wide width
+    fudge = lambda val: val+int(val*(-0.05+0.1*random.random())) # function to apply random error to a value, +/- 5%
+    
+    # get some value for wide width
+    # max is 190 since max(fudge(190)) == 200 (199.5 rounded up)
+    wide = random.randint(2,190)
     narrow = int(wide/2.0)       # compute narrow width
+        
     width = {"0":narrow,"1":wide} # mapping bit character -> bar width
 
-    fudge = lambda val: int(val+val*(-0.05+0.1*random.random())) # function to apply random error to a value, +/- 5%
     values = [] # list to hold integer values for final representation
 
     for b in codeCKBitStr:              #loop over bits characters in code bit string
@@ -87,15 +91,15 @@ def getValues(dirtyCode):
     return values
 
 parser = ArgumentParser()
-parser.add_argument('-r', '--randNum', type=int, default=0, help='if you want randomly generated cases, specify the number of cases.')
+parser.add_argument('-r', '--numRand', type=int, default=0, help='if you want randomly generated cases, specify the number of cases.')
 parser.add_argument('-c', '--code', nargs='+', help='specify specific codes you would like to test.  If random cases are also generated, these will be the first cases.')
 parser.add_argument('-f', '--file', help='optionally print output to the specified file.')
 parser.add_argument('-t', '--testFile', help='optionally print the expected java output to a the specified file')
 parser.add_argument('-v', '--verbose', action='store_true', help='print the values to command line')
 args = parser.parse_args()
 
-if not args.code and args.randNum == 0:
-    args.randNum = 1 # send at least one output
+if not args.code and args.numRand == 0:
+    args.numRand = 1 # send at least one output
     
 allValues = []
 allCodes = []
@@ -108,7 +112,7 @@ if args.code: # get input code from command line arg
     
 # generate the desired number of random cases.
 # if the random arg was not set, numRand will be 0
-for i in xrange(args.randNum):
+for i in xrange(args.numRand):
     code = randCode()
     allCodes.append(code)
     values = getValues(code)
