@@ -52,11 +52,11 @@ class BarCodes {
         encodings = Collections.unmodifiableMap(map);
     }
     
-    private static int[] argsToInputs(String[] args) {
-        int numInputs = Integer.valueOf(args[0]);
-        String[] strInputs = Arrays.copyOfRange(args, 1, args.length);
+    private static int[] argsToInputs(String[] args, int startIndex) {
+        int numInputs = Integer.valueOf(args[startIndex]);
+        if (startIndex + 1 + numInputs > args.length) return null;                
+        String[] strInputs = Arrays.copyOfRange(args, startIndex + 1, startIndex + 1 + numInputs);
         int[] intInputs = convertToIntArray(strInputs);
-        if (numInputs != intInputs.length) return null;
         if (!checkRange(intInputs)) return null;
         return intInputs;
     }
@@ -79,6 +79,7 @@ class BarCodes {
     */
     private static byte[] convertToByteEncoding(int[] intInputs) {
         int[] ranges = getRanges(intInputs);
+        if (ranges == null) return null;
         // TODO: return null if either low range or high range deviates
         //       from their center by more than 5%
         byte[] byteEncoded = new byte[intInputs.length];
@@ -90,8 +91,8 @@ class BarCodes {
                        intInputs[i] <= ranges[3]) {
                 byteEncoded[i] = 1; // wide bar
             } else {
-                System.out.println("Oops.  something wrong with range function!");
-                System.exit(2);
+                System.out.println("oops. Something wrong with range function!");
+                System.exit(1);
             }
         }
         return byteEncoded;
@@ -185,7 +186,7 @@ class BarCodes {
             }
         }
         // something is very wrong if there are no gaps in the input data
-        if (gapIndex == -1) badCode(1);
+        if (gapIndex == -1) return null;
         int narrowMin = sortedCpy[0];
         int narrowMax = sortedCpy[gapIndex];
         int wideMin = sortedCpy[gapIndex + 1];
@@ -207,7 +208,7 @@ class BarCodes {
 
     private static int getWeight(char character) {
         if (Character.isDigit(character)) {
-            return Integer.parseInt(Character.toString(character));
+            return Character.getNumericValue(character);
         } else if (character == '-') {
             return 10;
         } else {
@@ -217,7 +218,7 @@ class BarCodes {
     
     private static boolean checkC(char[] characters) {
         int n = characters.length - 2;
-        int c = Integer.parseInt(Character.toString(characters[n]));
+        int c = Character.getNumericValue(characters[n]);
         int sum = 0;
         for (int i = 0; i < n; i++) {
             sum += ((n - i - 1)%10 + 1)*getWeight(characters[i]);
@@ -229,7 +230,7 @@ class BarCodes {
 
     private static boolean checkK(char[] characters) {
         int n = characters.length - 1;
-        int k = Integer.parseInt(Character.toString(characters[n]));
+        int k = Character.getNumericValue(characters[n]);
         int sum = 0;        
         for (int i = 0; i < n; i++) {
             sum += ((n - i - 1)%9 + 1)*getWeight(characters[i]);
@@ -239,47 +240,53 @@ class BarCodes {
     }
     
     /*
-      Output 'bad code' error with the given case number,
-      and exit w/ error
+      Output correctly formatted error with the given case number and type
+      and exit w/o error
+      Type should be 'code', 'c', or 'k'      
     */
-    private static void badCode(int caseNum) {
-        System.out.println("Case " + caseNum + ": bad code");
-        System.exit(1);
+    private static String bad(String type, int caseNum) {
+        return new String("Case " + caseNum + ": bad " + type);
     }
 
-    private static void badC(int caseNum) {
-        System.out.println("Case " + caseNum + ": bad c");
-        System.exit(1);
-        
+    private static String good(char[] characters, int caseNum) {
+        return new String("Case " + caseNum + ": " + String.valueOf(characters));
     }
 
-    private static void badK(int caseNum) {
-        System.out.println("Case " + caseNum + ": bad k");
-        System.exit(1);        
-    }
-
-    public static void run(String[] args) {
-        int[] inputs = argsToInputs(args);
-        if (inputs == null) badCode(1);        
+    private static String runInputCase(int[] inputs, int caseNum) {
         byte[] byteEncodedInputs = convertToByteEncoding(inputs);
-        if (byteEncodedInputs == null) badCode(1);
+        if (byteEncodedInputs == null) return bad("code", caseNum);
         byteEncodedInputs = trimStartStop(byteEncodedInputs);
-        if (byteEncodedInputs == null) badCode(1);
+        if (byteEncodedInputs == null) return bad("code", caseNum);
         char[] characters = convertToCharacters(byteEncodedInputs);
-        if (characters == null) badCode(1);
-        if (!checkC(characters)) badC(1);
-        if (!checkK(characters)) badK(1);
+        if (characters == null) return bad("code", caseNum);
+        if (!checkC(characters)) return bad("c", caseNum);
+        if (!checkK(characters)) return bad("k", caseNum);
         characters = Arrays.copyOfRange(characters, 0, characters.length - 2);
-        System.out.println(characters);
+        return good(characters, caseNum);        
+    }
+    
+    public static void run(String[] args) {
+        int n = 0, caseNum = 1;
+        do {
+            int[] inputs = argsToInputs(args, n);
+            if (inputs == null) {
+                System.out.println(bad("code", caseNum));
+                System.exit(0);
+            }
+            System.out.println(runInputCase(inputs, caseNum));
+            n += inputs.length + 1;            
+            caseNum++;
+        } while (n < args.length);
     }
     
     public static void main(String[] args) {
-        // args.length must be >= 18
+        // args.length must be >= 30:
         // 1 int for number of regions
         // 10 for the start and stop encodings
+        // 10 for C and K
         // 5 for the minimum one encoded char,
-        // at least 2 separating bars
-        if (args.length < 18) badCode(0);
+        // and at least 4 separating bars
+        if (args.length < 30) bad("code", 1);
         BarCodes.run(args);
     }
 }
