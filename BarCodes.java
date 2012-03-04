@@ -59,10 +59,20 @@ class BarCodes {
         int numInputs = Integer.valueOf(args[0]);
         String[] strInputs = Arrays.copyOfRange(args, 1, args.length);
         int[] intInputs = convertToIntArray(strInputs);
-        if (numInputs != intInputs.length) return null;        
+        if (numInputs != intInputs.length) return null;
+        if (!checkRange(intInputs)) return null;
         return intInputs;
     }
 
+    boolean checkRange(int[] inputs) {
+        for (int i = 0; i < inputs.length; i++) {
+            if (inputs[i] < 1 || inputs[i] > 200) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
     // convert an the original input ints to an array of 0's and 1's
     byte[] convertToByteEncoding(int[] intInputs) {
         int[] ranges = getRanges(intInputs);
