@@ -205,6 +205,39 @@ class BarCodes {
         return intArray;
     }
 
+    private static int getWeight(char character) {
+        if (Character.isDigit(character)) {
+            return Integer.parseInt(Character.toString(character));
+        } else if (character == '-') {
+            return 10;
+        } else {
+            return -1;
+        }
+    }
+    
+    private static boolean checkC(char[] characters) {
+        int n = characters.length - 2;
+        int c = Integer.parseInt(Character.toString(characters[n]));
+        int sum = 0;
+        for (int i = 0; i < n; i++) {
+            sum += ((n - i - 1)%10 + 1)*getWeight(characters[i]);
+        }
+        sum %= 11;
+
+        return (c == sum);
+    }
+
+    private static boolean checkK(char[] characters) {
+        int n = characters.length - 1;
+        int k = Integer.parseInt(Character.toString(characters[n]));
+        int sum = 0;        
+        for (int i = 0; i < n; i++) {
+            sum += ((n - i - 1)%9 + 1)*getWeight(characters[i]);
+        }
+        sum %= 11;
+        return (k == sum);
+    }
+    
     /*
       Output 'bad code' error with the given case number,
       and exit w/ error
@@ -212,6 +245,17 @@ class BarCodes {
     private static void badCode(int caseNum) {
         System.out.println("Case " + caseNum + ": bad code");
         System.exit(1);
+    }
+
+    private static void badC(int caseNum) {
+        System.out.println("Case " + caseNum + ": bad c");
+        System.exit(1);
+        
+    }
+
+    private static void badK(int caseNum) {
+        System.out.println("Case " + caseNum + ": bad k");
+        System.exit(1);        
     }
 
     public static void run(String[] args) {
@@ -223,6 +267,9 @@ class BarCodes {
         if (byteEncodedInputs == null) badCode(1);
         char[] characters = convertToCharacters(byteEncodedInputs);
         if (characters == null) badCode(1);
+        if (!checkC(characters)) badC(1);
+        if (!checkK(characters)) badK(1);
+        characters = Arrays.copyOfRange(characters, 0, characters.length - 2);
         System.out.println(characters);
     }
     
