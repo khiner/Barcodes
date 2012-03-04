@@ -1,3 +1,8 @@
-To run, use
+To compile,
 $ javac BarCodes.java
+
+To run with custom input,
 $ java BarCodes <args>
+
+To run with automatically generated test cases,
+$ python CodeMaker.py

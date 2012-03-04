@@ -13,6 +13,7 @@ The process is as follows:
     8. randomly reverse the integer list or not"""
 
 import sys,re,random
+from subprocess import call
 
 # mapping from code char -> bit String
 bitStrs={"0":"00001","1":"10001","2":"01001","3":"11000","4":"00101", \
@@ -44,7 +45,7 @@ def K(code):                                # function to generate K check value
 
 
 #dirtyCode = sys.argv[1]  # get input code from command line arg
-dirtyCode = "123-45"
+dirtyCode = "---"
 code = re.sub(r"[^0-9\-]","",dirtyCode)     # remove invalid characters from input
 
 #compute and append C to code string
@@ -72,8 +73,16 @@ for b in codeCKBitStr:              #loop over bits characters in code bit strin
 if random.random() > 0.50:          #the code could be backwards, reverse it half the time
     values.reverse()
 
-print len(values)
-print values
+cmd = ["java"]
+cmd.append("BarCodes")
+cmd.append(str(len(values)))
+cmd += [str(x) for x in values]
+call(cmd)
+
+# uncomment for command-line output
+# print len(values)
+# for v in values:    
+#      print str(v) + " ",
 
 # uncomment for file ouput to filename given by second cmd line arg
 # f = open(sys.argv[2])
@@ -81,10 +90,4 @@ print values
 # for v in values:
 #    f.write(str(v) + " ")
 # f.close()
-
-
-
-
-
-
 
