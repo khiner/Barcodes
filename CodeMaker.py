@@ -35,14 +35,22 @@ def C(code):                                 # function to generate C check valu
     n = len(code)                            # get length of code string
     for i in range(1,n+1):                   # loop over code string length, perform summation
         c += (((n-i)%10) + 1) * w(code[i-1]) # compute this step of sum
-    return c%11                              # return summation mod 11, C value
+    c %= 11
+    if c == 10:
+        # we want one character for c, 10 is two characters        
+        c = '-'
+    return c                              # return summation mod 11, C value
 
 def K(code):                                # function to generate K check value
     k = 0                                   # set k to zero
     n = len(code)                           # get length of code string
     for i in range(1,n+1):                  # loop over code string length, summation
         k += (((n-i)%9) +1) * w(code[i-1])  # compute this step of sum, using (n-i) not (n-i +1) because n redefined to include C
-    return k%11                             # return summation mod 11, K value
+    k %= 11
+    if k == 10:
+        # we want one character for k, 10 is two characters
+        k = '-'    
+    return k                             # return summation mod 11, K value
 
 def randCode():
     length = random.randint(1,10)

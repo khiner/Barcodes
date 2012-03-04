@@ -212,28 +212,28 @@ class BarCodes {
         } else if (character == '-') {
             return 10;
         } else {
+            System.out.println("Weight problem.  No pun.");
             return -1;
         }
     }
     
     private static boolean checkC(char[] characters) {
         int n = characters.length - 2;
-        int c = Character.getNumericValue(characters[n]);
+        int c = getWeight(characters[n]);
         int sum = 0;
-        for (int i = 0; i < n; i++) {
-            sum += ((n - i - 1)%10 + 1)*getWeight(characters[i]);
+        for (int i = 1; i < n + 1; i++) {
+            sum += ((n - i)%10 + 1)*getWeight(characters[i - 1]);
         }
         sum %= 11;
-
         return (c == sum);
     }
 
     private static boolean checkK(char[] characters) {
         int n = characters.length - 1;
-        int k = Character.getNumericValue(characters[n]);
+        int k = getWeight(characters[n]);
         int sum = 0;        
-        for (int i = 0; i < n; i++) {
-            sum += ((n - i - 1)%9 + 1)*getWeight(characters[i]);
+        for (int i = 1; i < n + 1; i++) {
+            sum += ((n - i)%9 + 1)*getWeight(characters[i - 1]);
         }
         sum %= 11;
         return (k == sum);
