@@ -56,15 +56,36 @@ def randCode(maxLength):
     length = random.randint(1, maxLength)
     return ''.join(random.choice(string.digits + '-') for i in xrange(length))
 
-def getValues(dirtyCode):
+def getCodeCK(dirtyCode, badC=False, badK=False):
     code = re.sub(r"[^0-9\-]","",dirtyCode)     # remove invalid characters from input
-
+    chars = string.digits + '-'
     #compute and append C to code string
-    codeC = code + str(C(code))
+    c = str(C(code))    
+    if badC:
+        c = random.choice(chars.replace(c, ''))
+        
+    codeC = code + c
 
     #compute and append K to code string
-    codeCK = codeC + str(K(codeC))
+    k = str(K(codeC))    
+    if badK:
+        k = random.choice(chars.replace(k, ''))
+        
+    return codeC + k
 
+def genBadC(dirtyCode):
+    codeCK = getCodeCK(dirtyCode, badC=True)
+    return genValues(codeCK)
+
+def genBadK(dirtyCode):
+    codeCK = getCodeCK(dirtyCode, badK=True)
+    return genValues(codeCK)
+    
+def genGood(dirtyCode):
+    codeCK = getCodeCK(dirtyCode)
+    return genValues(codeCK)
+    
+def genValues(codeCK):
     #compute the bitstring for this code
     codeCKBitStr = bitStrs["Start"] + "0"   # begin with start char and spacer
     for char in codeCK:                     # loop over all chars in code
@@ -107,17 +128,25 @@ allCodes = []
 if args.code: # get input code from command line arg
     for code in args.code:
         allCodes.append(code)
-        values = getValues(code)
-        values.insert(0,len(values))
+        values = genGood(code)
+        values.insert(0,len(values)) # first number is length of input
         allValues.append(values)
     
 # generate the desired number of random cases.
 # if the random arg was not set, numRand will be 0
 for i in xrange(args.numRand):
     code = randCode(args.maxLength)
-    allCodes.append(code)
-    values = getValues(code)
-    values.insert(0, len(values))
+    rand = random.random()
+    if rand < 0.33:
+        allCodes.append(code)
+        values = genGood(code)
+    elif rand < 0.66:
+        allCodes.append('badC')
+        values = genBadC(code)
+    else:
+        allCodes.append('badK')
+        values = genBadK(code)                            
+    values.insert(0, len(values)) # first number is length of input
     allValues.append(values)
 
 cmd = ["java"]
@@ -148,5 +177,11 @@ if args.testFile:
     f = open(args.testFile, 'w')
     # write expected output of each case to the file
     for i in xrange(len(allCodes)):
-        f.write('Case ' + str(i + 1) + ': ' + allCodes[i] + '\n')
+        if allCodes[i] == 'badC':
+            f.write('Case ' + str(i + 1) + ': bad c\n')
+        elif allCodes[i] == 'badK':
+            f.write('Case ' + str(i + 1) + ': bad k\n')
+        else:
+            f.write('Case ' + str(i + 1) + ': ' + allCodes[i] + '\n')
+                            
     f.close()
