@@ -94,10 +94,10 @@ def genValues(codeCK):
 
     fudge = lambda val: val+int(val*(-0.05+0.1*random.random())) # function to apply random error to a value, +/- 5%
     
-    # get some value for wide width
-    # max is 190 since max(fudge(190)) == 200 (199.5 rounded up)
-    wide = random.randint(2,190)
-    narrow = int(wide/2.0)       # compute narrow width
+    # get some value for narrow width
+    # max is 95, since 92*2 = 190, and max(fudge(190)) == 200 (199.5 rounded up)
+    narrow = random.randint(1,95)
+    wide = narrow*2       # compute wide width    
         
     width = {"0":narrow,"1":wide} # mapping bit character -> bar width
 

@@ -5,18 +5,23 @@ To run with custom input,
 $ java BarCodes <args>
 
 To run with automatically generated test cases,
-$ python CodeMaker.py [-h] [-r RANDNUM] [-c CODE [CODE ...]] [-f FILE] [-v]
+$ python CodeMaker.py [-h] [-r NUMRAND] [-c CODE [CODE ...]] [-m MAXLENGTH]
+                    [-f FILE] [-t TESTFILE] [-v]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -r RANDNUM, --randNum RANDNUM
+  -r NUMRAND, --numRand NUMRAND
                         if you want randomly generated cases, specify the
                         number of cases.
   -c CODE [CODE ...], --code CODE [CODE ...]
-                        specify specific codes you'd like to test. If random
-                        cases are also generated, these will be the first
-                        cases.
-  -f FILE, --file FILE  Optionally print output to this file.
+                        specific codes you would like to test. If random cases
+                        are also generated, these will be the first cases.
+  -m MAXLENGTH, --maxLength MAXLENGTH
+                        maximum length of the test strings. default is 20.
+  -f FILE, --file FILE  optionally print output to the specified file.
+  -t TESTFILE, --testFile TESTFILE
+                        optionally print the expected java output to a the
+                        specified file
   -v, --verbose         print the values to command line
 
 
@@ -24,9 +29,9 @@ A testing strategy:
 $ python CodeMaker.py [OTHER ARGS] --testFile expectedOutputs > actualOutputs
 $ diff expectedOutputs actualOutputs
 
-EXAMPLE 1 (simple): This example generates and runs one randomly generated example,
-with the default maximum length of 20 characters.  No file output, and the
-barcode output is displayed in stdout.
+EXAMPLE 1 (simple): This example generates and runs one randomly generated
+example, with the default maximum length of 20 characters.  No file output,
+and the barcode output is displayed in stdout.
 
 $ python CodeMader.py
 

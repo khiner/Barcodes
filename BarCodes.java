@@ -57,31 +57,44 @@ class BarCodes {
         if (startIndex + 1 + numInputs > args.length) return null;                
         String[] strInputs = Arrays.copyOfRange(args, startIndex + 1, startIndex + 1 + numInputs);
         int[] intInputs = convertToIntArray(strInputs);
-        if (!checkRange(intInputs)) return null;
         return intInputs;
     }
 
     /*
-      Returns false if any of the provided input elements are
-      outside of the range [1, 200].  Else returns true.
+      Input is expected to be an array of 4 ints, with the format
+      [narrowMin, narrowMax, wideMin, wideMax]
+      Returns true if:
+      1) the entire range is inside the range [1, 200], and
+      2) if any candidate is found in the lower range such that
+      5% in either direction is still inside the lower range,
+      and 5% in either direction of 2X that value is still inside
+      the upper range, since this can be considered a 'true' narrow value.
     */
-    private static boolean checkRange(int[] inputs) {
-        for (int i = 0; i < inputs.length; i++) {
-            if (inputs[i] < 1 || inputs[i] > 200) {
-                return false;
-            }
+    private static boolean checkRanges(int[] ranges) {
+        // check range requirements        
+        if (ranges[0] < 1 || ranges[ranges.length - 1] > 200) {
+            return false;
         }
-        return true;
+
+        // check 5% and 2X requirements        
+        for (int v = ranges[0]; v <= ranges[1]; v++) {
+            if (ranges[0] >= v - (int)(v*0.05) && ranges[1] <= v + (int)(v*0.05) &&
+                ranges[2] >= v*2 - (int)(v*2*0.05) && ranges[3] <= v*2 + (int)(v*2*0.05))
+                return true;
+        }
+
+        // no successful candidates were found
+        return false;
     }
     
     /*
-      convert an the original input ints to an array of 0's and 1's
+      convert an the original input ints to an array of 0's and 1's.
+      returns null for bad code
     */
     private static byte[] convertToByteEncoding(int[] intInputs) {
         int[] ranges = getRanges(intInputs);
-        if (ranges == null) return null;
-        // TODO: return null if either low range or high range deviates
-        //       from their center by more than 5%
+        if (ranges == null || !checkRanges(ranges)) return null;
+        
         byte[] byteEncoded = new byte[intInputs.length];
         for (int i = 0; i < intInputs.length; i++) {
             if (intInputs[i] >= ranges[0] &&
@@ -163,7 +176,7 @@ class BarCodes {
     
     /*
       Returns an array of four ints, with the format
-      [narrowMin, narrowMax, wideMin, highMax],
+      [narrowMin, narrowMax, wideMin, wideMax],
       where [narrowMin, narrowMax] is the range of the narrow values,
       and [wideMin, wideMax] is the range of the wide values
       These are calculated by sorting the inputs and finding the
@@ -191,6 +204,8 @@ class BarCodes {
         int narrowMax = sortedCpy[gapIndex];
         int wideMin = sortedCpy[gapIndex + 1];
         int wideMax = sortedCpy[sortedCpy.length - 1];
+
+        // check ranges to 
         return new int[] {narrowMin, narrowMax, wideMin, wideMax};
     }
 
