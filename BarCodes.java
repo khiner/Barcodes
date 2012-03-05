@@ -54,21 +54,24 @@ class BarCodes {
     
     private static int[] argsToInputs(String[] args, int startIndex) {
         int numInputs = Integer.valueOf(args[startIndex]);
-        if (startIndex + 1 + numInputs > args.length) return null;                
-        String[] strInputs = Arrays.copyOfRange(args, startIndex + 1, startIndex + 1 + numInputs);
-        int[] intInputs = convertToIntArray(strInputs);
-        return intInputs;
+        if (numInputs < 29) return null;
+        int i = startIndex + 1;
+        if (i + numInputs > args.length) return null;
+        String[] strInputs = Arrays.copyOfRange(args, i, i + numInputs);
+        return convertToIntArray(strInputs);
     }
 
     /*
       Input is expected to be an array of 4 ints, with the format
       [narrowMin, narrowMax, wideMin, wideMax]
-      Returns true if:
+      Returns true if:      
       1) the entire range is inside the range [1, 200], and
       2) if any candidate is found in the lower range such that
       5% in either direction is still inside the lower range,
       and 5% in either direction of 2X that value is still inside
       the upper range, since this can be considered a 'true' narrow value.
+      
+      Else returns false
     */
     private static boolean checkRanges(int[] ranges) {
         // check range requirements        
@@ -88,24 +91,21 @@ class BarCodes {
     }
     
     /*
-      convert an the original input ints to an array of 0's and 1's.
+      convert the original input ints to an array of 0's and 1's.
       returns null for bad code
     */
     private static byte[] convertToByteEncoding(int[] intInputs) {
         int[] ranges = getRanges(intInputs);
         if (ranges == null || !checkRanges(ranges)) return null;
-        
+        // first bar should be narrow even if inputs are reversed
+        if (intInputs[0] > ranges[1]) return null;
         byte[] byteEncoded = new byte[intInputs.length];
         for (int i = 0; i < intInputs.length; i++) {
             if (intInputs[i] >= ranges[0] &&
                 intInputs[i] <= ranges[1]) {
                 byteEncoded[i] = 0; // narrow bar
-            } else if (intInputs[i] >= ranges[2] &&
-                       intInputs[i] <= ranges[3]) {
-                byteEncoded[i] = 1; // wide bar
             } else {
-                System.out.println("oops. Something wrong with range function!");
-                System.exit(1);
+                byteEncoded[i] = 1; // wide bar
             }
         }
         return byteEncoded;
@@ -125,9 +125,12 @@ class BarCodes {
             if (encodings.containsKey(encoding)) {
                 characters[j] = encodings.get(encoding);
             } else {
-                // no character for this encoding
+                // no character for this encoding. bad code
                 return null;
             }
+            // if separating bar is not narrow, bad code
+            if (i + 5 < byteInputs.length &&
+                byteInputs[i + 5] != 0) return null;
         }
         return characters;
     }
@@ -184,12 +187,11 @@ class BarCodes {
       narrowMax and wideMin
     */
     private static int[] getRanges(int[] intInputs) {
-        if (intInputs == null || intInputs.length == 0) return null;
         int[] sortedCpy = Arrays.copyOf(intInputs, intInputs.length);
         Arrays.sort(sortedCpy);
         // find the largest gap between two adjascent numbers
         // this will separate the narrow bars from the wide bars
-        int largestGap = Integer.MIN_VALUE;
+        int largestGap = 0;
         int gapIndex = -1;
         for (int i = 0; i < sortedCpy.length - 1; i++) {
             int gap = sortedCpy[i + 1] - sortedCpy[i];
@@ -284,7 +286,7 @@ class BarCodes {
         int n = 0, caseNum = 1;
         do {
             int[] inputs = argsToInputs(args, n);
-            if (inputs == null) {
+            if (inputs == null || inputs.length == 0) {
                 System.out.println(bad("code", caseNum));
                 System.exit(0);
             }
@@ -295,12 +297,13 @@ class BarCodes {
     }
     
     public static void main(String[] args) {
-        // args.length must be >= 30:
-        // 1 int for number of regions
-        // 10 for the start and stop encodings
-        // 10 for C and K
-        // 5 for the minimum one encoded char,
-        // and at least 4 separating bars
+        /* args.length must be >= 30:
+           1 int for number of regions
+           10 for the start and stop encodings
+           10 for C and K
+           5 for the minimum one encoded char,
+           and at least 4 separating bars
+        */
         if (args.length < 30) bad("code", 1);
         BarCodes.run(args);
     }
