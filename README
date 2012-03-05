@@ -23,3 +23,26 @@ optional arguments:
 A testing strategy:
 $ python CodeMaker.py [OTHER ARGS] --testFile expectedOutputs > actualOutputs
 $ diff expectedOutputs actualOutputs
+
+EXAMPLE 1 (simple): This example generates and runs one randomly generated example,
+with the default maximum length of 20 characters.  No file output, and the
+barcode output is displayed in stdout.
+
+$ python CodeMader.py
+
+EXAMPLE 2 (complex):  This example generates the test cases 123, ---, and
+123-45, followed by 200 randomly generated examples with a max string
+length of 50. The output that is processed by the Java code is written to
+the file 'outputs', the expected output is written to 'expectedOutputs',
+and the output of the Java code is piped to 'actualOutputs'.
+
+$ python CodeMaker.py --code 123 --- 123-45 --numRand 200 --maxLength 50 --file outputs --testFile expectedOutputs > actualOutputs 
+
+Equivalent syntax:
+
+python CodeMaker.py -c 123 --- 123-45 -r 200 -m 50 -f outputs -t expectedOutputs > actualOutputs 
+
+Ideally after running the above command,
+$ diff expectedOutputs actualOutputs
+
+should produce no output.

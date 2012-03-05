@@ -52,8 +52,8 @@ def K(code):                                # function to generate K check value
         k = '-'    
     return k                             # return summation mod 11, K value
 
-def randCode():
-    length = random.randint(1,10)
+def randCode(maxLength):
+    length = random.randint(1, maxLength)
     return ''.join(random.choice(string.digits + '-') for i in xrange(length))
 
 def getValues(dirtyCode):
@@ -92,7 +92,8 @@ def getValues(dirtyCode):
 
 parser = ArgumentParser()
 parser.add_argument('-r', '--numRand', type=int, default=0, help='if you want randomly generated cases, specify the number of cases.')
-parser.add_argument('-c', '--code', nargs='+', help='specify specific codes you would like to test.  If random cases are also generated, these will be the first cases.')
+parser.add_argument('-c', '--code', nargs='+', help='specific codes you would like to test.  If random cases are also generated, these will be the first cases.')
+parser.add_argument('-m', '--maxLength', type=int, help="maximum length of the test strings.  default is 20.", default=20)
 parser.add_argument('-f', '--file', help='optionally print output to the specified file.')
 parser.add_argument('-t', '--testFile', help='optionally print the expected java output to a the specified file')
 parser.add_argument('-v', '--verbose', action='store_true', help='print the values to command line')
@@ -113,7 +114,7 @@ if args.code: # get input code from command line arg
 # generate the desired number of random cases.
 # if the random arg was not set, numRand will be 0
 for i in xrange(args.numRand):
-    code = randCode()
+    code = randCode(args.maxLength)
     allCodes.append(code)
     values = getValues(code)
     values.insert(0, len(values))
