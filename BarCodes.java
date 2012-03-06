@@ -78,7 +78,6 @@ class BarCodes {
         if (ranges[0] < 1 || ranges[ranges.length - 1] > 200) {
             return false;
         }
-
         // check 5% and 2X requirements        
         for (int v = ranges[0]; v <= ranges[1]; v++) {
             if (ranges[0] >= v - (int)(v*0.05) && ranges[1] <= v + (int)(v*0.05) &&
@@ -88,6 +87,19 @@ class BarCodes {
 
         // no successful candidates were found
         return false;
+    }
+
+    /*
+      every 6th bar should be a narrow, separating bar (encoded 0),
+      starting after the start character
+    */
+    private static boolean checkSeparators(byte[] byteInputs) {
+        for (int i = 5; i < byteInputs.length; i += 6) {
+            if (byteInputs[i] != 0) {
+                return false;
+            }
+        }
+        return true;
     }
     
     /*
@@ -128,9 +140,6 @@ class BarCodes {
                 // no character for this encoding. bad code
                 return null;
             }
-            // if separating bar is not narrow, bad code
-            if (i + 5 < byteInputs.length &&
-                byteInputs[i + 5] != 0) return null;
         }
         return characters;
     }
@@ -149,7 +158,7 @@ class BarCodes {
                 return null;
             }
         }
-        // trim the start/stop bytes and the separators next to them
+        // trim the start/stop bytes, along with their surrounding narrows
         return Arrays.copyOfRange(byteInputs, 6, byteInputs.length - 6);
     }
 
@@ -271,6 +280,7 @@ class BarCodes {
 
     private static String runInputCase(int[] inputs, int caseNum) {
         byte[] byteEncodedInputs = convertToByteEncoding(inputs);
+        if (!checkSeparators(byteEncodedInputs)) return bad("code", caseNum);
         if (byteEncodedInputs == null) return bad("code", caseNum);
         byteEncodedInputs = trimStartStop(byteEncodedInputs);
         if (byteEncodedInputs == null) return bad("code", caseNum);
