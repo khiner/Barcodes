@@ -54,7 +54,14 @@ class BarCodes {
     
     private static int[] argsToInputs(String[] args, int startIndex) {
         int numInputs = Integer.valueOf(args[startIndex]);
-        if (numInputs < 29) return null;
+        /* args.length must be >= 30:
+           1 int for number of regions
+           10 for the start and stop encodings
+           10 for C and K
+           5 for the minimum one encoded char,
+           and at least 4 separating bars
+        */        
+        if ((numInputs + 1) % 6 != 0 || numInputs < 29 || numInputs > 150) return null;
         int i = startIndex + 1;
         if (i + numInputs > args.length) return null;
         String[] strInputs = Arrays.copyOfRange(args, i, i + numInputs);
@@ -306,14 +313,8 @@ class BarCodes {
     }
     
     public static void main(String[] args) {
-        /* args.length must be >= 30:
-           1 int for number of regions
-           10 for the start and stop encodings
-           10 for C and K
-           5 for the minimum one encoded char,
-           and at least 4 separating bars
-        */
-        if (args.length < 30) bad("code", 1);
+        //        long start = System.nanoTime();
         BarCodes.run(args);
+        //        System.out.println("Total time (ns): " + (System.nanoTime() - start));
     }
 }

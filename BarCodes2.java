@@ -3,7 +3,7 @@ import java.util.Map;
 import java.util.Collections;
 import java.util.Arrays;
 
-class BarCodes {
+class BarCodes2 {
     /*
       Wrapper class to hold arrays of bytes
       To be used as map keys (since arrays use object equality
@@ -70,7 +70,14 @@ class BarCodes {
     
     private static int[] argsToInputs(String[] args, int startIndex) {
         int c = Integer.valueOf(args[startIndex]);
-        if ((c+1)%6 != 0 || c < 29 || c > 150) return null;
+        /* c must be >= 30:
+           1 int for number of regions
+           10 for the start and stop encodings
+           10 for C and K
+           5 for the minimum one encoded char,
+           and at least 4 separating bars
+        */        
+        if ((c + 1) % 6 != 0 || c < 29 || c > 150) return null;
         int i = startIndex + 1;
         if (i + c > args.length) return null;
         String[] strInputs = Arrays.copyOfRange(args, i, i + c);
@@ -155,22 +162,6 @@ class BarCodes {
         return Arrays.copyOfRange(code, 1, code.length - 1);
     }
 
-    /*
-      Return true if the first and last 5 bytes of the input encode
-      for the start and stop characters respectively, else Return false
-    */
-    private static boolean checkStartStop(byte[] byteInputs) {
-        byte[] start = Arrays.copyOfRange(byteInputs, 0, 5);
-        byte[] stop = Arrays.copyOfRange(byteInputs, byteInputs.length - 5,
-                                         byteInputs.length);
-        Encoding startEncoding = new Encoding(start);        
-        Encoding stopEncoding = new Encoding(stop);
-        return (encodings.containsKey(startEncoding) &&
-                encodings.get(startEncoding) == 's' &&
-                encodings.containsKey(stopEncoding) &&
-                encodings.get(stopEncoding) == 's');
-    }
-
     private static char[] getReversedChars(char[] chars) {
         char[] reversed = new char[chars.length];
         for (int i = 0, j = chars.length - 1; i < chars.length; i++, j--) {
@@ -179,39 +170,6 @@ class BarCodes {
         return reversed;
     }
     
-    /*
-      Returns an array of four ints, with the format
-      [narrowMin, narrowMax, wideMin, wideMax],
-      where [narrowMin, narrowMax] is the range of the narrow values,
-      and [wideMin, wideMax] is the range of the wide values
-      These are calculated by sorting the inputs and finding the
-      largest gap between adjacent elements, which is the gap between
-      narrowMax and wideMin
-    */
-    private static int[] getRanges(int[] intInputs) {
-        int[] sortedCpy = Arrays.copyOf(intInputs, intInputs.length);
-        Arrays.sort(sortedCpy);
-        // find the largest gap between two adjascent numbers
-        // this will separate the narrow bars from the wide bars
-        int largestGap = 0;
-        int gapIndex = -1;
-        for (int i = 0; i < sortedCpy.length - 1; i++) {
-            int gap = sortedCpy[i + 1] - sortedCpy[i];
-            if (gap > largestGap) {
-                largestGap = gap;
-                gapIndex = i;
-            }
-        }
-        // something is very wrong if there are no gaps in the input data
-        if (gapIndex == -1) return null;
-        int narrowMin = sortedCpy[0];
-        int narrowMax = sortedCpy[gapIndex];
-        int wideMin = sortedCpy[gapIndex + 1];
-        int wideMax = sortedCpy[sortedCpy.length - 1];
-
-        return new int[] {narrowMin, narrowMax, wideMin, wideMax};
-    }
-
     /*
       Arg: string array (assumed to be integer strings)
       Returns: int array
@@ -294,14 +252,8 @@ class BarCodes {
     }
     
     public static void main(String[] args) {
-        /* args.length must be >= 30:
-           1 int for number of regions
-           10 for the start and stop encodings
-           10 for C and K
-           5 for the minimum one encoded char,
-           and at least 4 separating bars
-        */
-        if (args.length < 30) bad("code", 1);
+        //        long start = System.nanoTime();
         BarCodes.run(args);
+        //        System.out.println("Total time (ns): " + (System.nanoTime() - start));
     }
 }
