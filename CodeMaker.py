@@ -114,7 +114,8 @@ def genValues(codeCK):
 parser = ArgumentParser()
 parser.add_argument('-r', '--numRand', type=int, default=0, help='if you want randomly generated cases, specify the number of cases.')
 parser.add_argument('-c', '--code', nargs='+', help='specific codes you would like to test.  If random cases are also generated, these will be the first cases.')
-parser.add_argument('-m', '--maxLength', type=int, help="maximum length of the test strings.  default is 20.", default=20)
+parser.add_argument('-m', '--maxLength', type=int, help="maximum length of the test strings. \
+                    default is 21 for max input length of 150 (150/6 = 25, sub 4 for start/stop/c/k).", default=21)
 parser.add_argument('-f', '--file', help='optionally print output to the specified file.')
 parser.add_argument('-t', '--testFile', help='optionally print the expected java output to a the specified file')
 parser.add_argument('-v', '--verbose', action='store_true', help='print the values to command line')

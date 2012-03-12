@@ -35,6 +35,8 @@ class BarCodes {
 
     // initialize the encoding->character map
     public static final Map<Encoding, Character> encodings;
+    // backwards encoding->character map
+    public static final Map<Encoding, Character> bEncodings;
     static {
         Map<Encoding, Character> map = new HashMap<Encoding, Character>();
         map.put(new Encoding(new byte[] {0,0,0,0,1}), '0');
@@ -50,116 +52,107 @@ class BarCodes {
         map.put(new Encoding(new byte[] {0,0,1,0,0}), '-');
         map.put(new Encoding(new byte[] {0,0,1,1,0}), 's');
         encodings = Collections.unmodifiableMap(map);
+        Map<Encoding, Character> bMap = new HashMap<Encoding, Character>();
+        bMap.put(new Encoding(new byte[] {1,0,0,0,0}), '0');
+        bMap.put(new Encoding(new byte[] {1,0,0,0,1}), '1');
+        bMap.put(new Encoding(new byte[] {1,0,0,1,0}), '2');
+        bMap.put(new Encoding(new byte[] {0,0,0,1,1}), '3');
+        bMap.put(new Encoding(new byte[] {1,0,1,0,0}), '4');
+        bMap.put(new Encoding(new byte[] {0,0,1,0,1}), '5');
+        bMap.put(new Encoding(new byte[] {0,0,1,1,0}), '6');
+        bMap.put(new Encoding(new byte[] {1,1,0,0,0}), '7');
+        bMap.put(new Encoding(new byte[] {0,1,0,0,1}), '8');
+        bMap.put(new Encoding(new byte[] {0,0,0,0,1}), '9');
+        bMap.put(new Encoding(new byte[] {0,0,1,0,0}), '-');
+        bMap.put(new Encoding(new byte[] {0,1,1,0,0}), 's');
+        bEncodings = Collections.unmodifiableMap(bMap);        
     }
     
     private static int[] argsToInputs(String[] args, int startIndex) {
-        int numInputs = Integer.valueOf(args[startIndex]);
-        if (numInputs < 29) return null;
+        int c = Integer.valueOf(args[startIndex]);
+        if ((c+1)%6 != 0 || c < 29 || c > 150) return null;
         int i = startIndex + 1;
-        if (i + numInputs > args.length) return null;
-        String[] strInputs = Arrays.copyOfRange(args, i, i + numInputs);
+        if (i + c > args.length) return null;
+        String[] strInputs = Arrays.copyOfRange(args, i, i + c);
         return convertToIntArray(strInputs);
-    }
-
-    /*
-      Input is expected to be an array of 4 ints, with the format
-      [narrowMin, narrowMax, wideMin, wideMax]
-      Returns true if:      
-      1) the entire range is inside the range [1, 200], and
-      2) if any candidate is found in the lower range such that
-      5% in either direction is still inside the lower range,
-      and 5% in either direction of 2X that value is still inside
-      the upper range, since this can be considered a 'true' narrow value.
-      
-      Else returns false
-    */
-    private static boolean checkRanges(int[] ranges) {
-        // check range requirements        
-        if (ranges[0] < 1 || ranges[ranges.length - 1] > 200) {
-            return false;
-        }
-        // check 5% and 2X requirements        
-        for (int v = ranges[0]; v <= ranges[1]; v++) {
-            if (ranges[0] >= v - (int)(v*0.05) && ranges[1] <= v + (int)(v*0.05) &&
-                ranges[2] >= v*2 - (int)(v*2*0.05) && ranges[3] <= v*2 + (int)(v*2*0.05))
-                return true;
-        }
-
-        // no successful candidates were found
-        return false;
-    }
-
-    /*
-      every 6th bar should be a narrow, separating bar (encoded 0),
-      starting after the start character
-    */
-    private static boolean checkSeparators(byte[] byteInputs) {
-        for (int i = 5; i < byteInputs.length; i += 6) {
-            if (byteInputs[i] != 0) {
-                return false;
-            }
-        }
-        return true;
     }
     
     /*
       convert the original input ints to an array of 0's and 1's.
       returns null for bad code
     */
-    private static byte[] convertToByteEncoding(int[] intInputs) {
-        int[] ranges = getRanges(intInputs);
-        if (ranges == null || !checkRanges(ranges)) return null;
-        // first bar should be narrow even if inputs are reversed
-        if (intInputs[0] > ranges[1]) return null;
-        byte[] byteEncoded = new byte[intInputs.length];
-        for (int i = 0; i < intInputs.length; i++) {
-            if (intInputs[i] >= ranges[0] &&
-                intInputs[i] <= ranges[1]) {
-                byteEncoded[i] = 0; // narrow bar
-            } else {
-                byteEncoded[i] = 1; // wide bar
+    private static char[] convertToCharacters(int[] b) {
+        int c = b.length;
+        float r = 0.05f;
+        int[] I_n = {(int)(b[0]*(1 - r)/(1 + r)), (int)(b[0]*(1 + r)/(1 - r))};
+        int[] I_w = {2*I_n[0], 2*I_n[1]};
+        int n_min = Integer.MAX_VALUE, w_min = Integer.MAX_VALUE;        
+        int n_max = 0, w_max = 0;        
+        boolean startConsumed = false;
+        boolean reversed = false;
+        Encoding curr = new Encoding(new byte[5]);
+        char[] code = new char[(c + 1)/6];
+        int codeIndex = 0;
+        
+        for (int i = 0; i < c; i++) {
+            if ((i + 1)%6 == 0 || i == c - 1) { //This is a spacing character, consume curr
+                // space is supposed to be a narrow bar
+                if (b[i] < I_n[0] || b[i] > I_n[1]) return null;
+                n_max = Math.max(n_max, b[i]);
+                n_min = Math.min(n_min, b[i]);
+                if (!startConsumed) { //validate start/stop symbol and check for code reversa
+                    
+                    if (encodings.containsKey(curr) && encodings.get(curr) == 's') {
+                        // the code is not reversed
+                        startConsumed = true;
+                        reversed = false;                        
+                    } else if (bEncodings.containsKey(curr) && bEncodings.get(curr) == 's') {
+                        // the code is reversed
+                        startConsumed = true;
+                        reversed = true;
+                    } else return null; // bad code - start/stop symbol is bad
+                }
+                if (reversed) {  // The code is backwards, use the reversed bit string to character mapping
+                    if (bEncodings.containsKey(curr)) {
+                        char character = bEncodings.get(curr);
+                        code[codeIndex] = character;
+                        codeIndex++;
+                    } else return null; // bad code - no character for curr
+                } else { // The code is not backwards, use the regular bit string character mapping
+                    if (encodings.containsKey(curr)) {
+                        char character = encodings.get(curr);
+                        code[codeIndex] = character;
+                        codeIndex++;
+                    } else return null; // bad code - no character for curr
+                }
+                Arrays.fill(curr.bytes, (byte)0);  //purge curr to prepare for next character
+            } else {  //This is not a spacing character
+                if (b[i] >= I_n[0] && b[i] <= I_n[1]) { // narrow
+                    n_max = Math.max(n_max, b[i]);
+                    n_min = Math.min(n_min, b[i]);
+                    curr.bytes[i%6] = 0;
+                } else if (b[i] >= I_w[0] && b[i] <= I_w[1]) { // wide
+                    w_max = Math.max(w_max, b[i]);
+                    w_min = Math.min(w_min, b[i]);
+                    curr.bytes[i%6] = 1;
+                } else return null; // bad code - bar is neither wide nor narrow
             }
         }
-        return byteEncoded;
-    }
 
-    /*
-      convert the given bytes to an array of the characters it encodes.
-      bytes arg is assumed to be in the correct order, and
-      composed only of character and separator bar encodings.
-      (start/stop encodings should be stripped)
-    */
-    static char[] convertToCharacters(byte[] byteInputs) {
-        char[] characters = new char[byteInputs.length/6 + 1];
-        Encoding encoding = new Encoding();
-        for (int i = 0, j = 0; i < byteInputs.length; i += 6, j++) {
-            encoding.bytes = Arrays.copyOfRange(byteInputs, i, i + 5);
-            if (encodings.containsKey(encoding)) {
-                characters[j] = encodings.get(encoding);
-            } else {
-                // no character for this encoding. bad code
-                return null;
-            }
+        // Post-Loop validation
+        if ((int)(n_max/(1 + r)) > (int)(n_min/(1 - r)) || (int)(w_max/(1 + r)) > (int)(w_min/(1 - r))
+            /*|| (int)(w_min/(1 - r)) >= (int)(2*n_max/(1 + r))*/) {
+            return null;  // observed max/mins violate tolerance r and/or criterion w = 2n
         }
-        return characters;
-    }
+        if (reversed) {
+            code = getReversedChars(code);
+        }
+        
+        if (code[0] != 's' || code[code.length - 1] != 's') {
+            return null; // bad code - invalid start/stop
+        }
 
-    /*
-      If the beginning and end aren't the start and stop characters,
-      reverse the bytes argument in place, and check again.
-      If the start/stop is still not correct, Return null
-      If start/stop is correct, Return the byte input arg with the
-      start and stop encodings trimmed.
-    */
-    private static byte[] trimStartStop(byte[] byteInputs) {
-        if (!checkStartStop(byteInputs)) {
-            byteInputs = getReversedBytes(byteInputs);
-            if (!checkStartStop(byteInputs)) {
-                return null;
-            }
-        }
-        // trim the start/stop bytes, along with their surrounding narrows
-        return Arrays.copyOfRange(byteInputs, 6, byteInputs.length - 6);
+        return Arrays.copyOfRange(code, 1, code.length - 1);
     }
 
     /*
@@ -178,10 +171,10 @@ class BarCodes {
                 encodings.get(stopEncoding) == 's');
     }
 
-    private static byte[] getReversedBytes(byte[] bytes) {
-        byte[] reversed = new byte[bytes.length];
-        for (int i = 0, j = bytes.length - 1; i < bytes.length; i++, j--) {
-            reversed[i] = bytes[j];
+    private static char[] getReversedChars(char[] chars) {
+        char[] reversed = new char[chars.length];
+        for (int i = 0, j = chars.length - 1; i < chars.length; i++, j--) {
+            reversed[i] = chars[j];
         }
         return reversed;
     }
@@ -278,12 +271,7 @@ class BarCodes {
     }
 
     private static String runInputCase(int[] inputs, int caseNum) {
-        byte[] byteEncodedInputs = convertToByteEncoding(inputs);
-        if (!checkSeparators(byteEncodedInputs)) return bad("code", caseNum);
-        if (byteEncodedInputs == null) return bad("code", caseNum);
-        byteEncodedInputs = trimStartStop(byteEncodedInputs);
-        if (byteEncodedInputs == null) return bad("code", caseNum);
-        char[] characters = convertToCharacters(byteEncodedInputs);
+        char[] characters = convertToCharacters(inputs);
         if (characters == null) return bad("code", caseNum);
         if (!checkC(characters)) return bad("c", caseNum);
         if (!checkK(characters)) return bad("k", caseNum);
