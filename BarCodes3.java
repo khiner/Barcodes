@@ -1,38 +1,40 @@
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 
 final class BadCode extends Exception{
+	//Exception for a bad code
 	public BadCode(String msg){
 		super(msg);
 	}
 }
 
 public class BarCodes3 {
-	public static HashMap<String,String> bMap;
-	public static HashMap<String,String> bMapRev;
-	public static HashMap<Character,Integer> charWeights;
-	public static int nmax = -1;
-	public static int nmin = 9999999;
-	public static int wmax = -1;
-	public static int wmin = 9999999;
-	public static double[] I_n;
-	public static double[] I_w;
-	public static int c;
-	public static int b0;
-	public static double r = 0.05;
-	public static boolean reversed = false;
-	public static boolean startConsumed = false;
-	public static String curr = "";
-	public static String code = "";
-	public static Object currChar = null;
-	public static int codeLen;
+	public static HashMap<String,String> bMap;// bitString -> codeCharacter
+	public static HashMap<String,String> bMapRev;// reversedBitString -> codeCharacter
+	public static HashMap<Character,Integer> charWeights;// character -> character weight
+	public static int nmax = -1;		//max narrow bar width encountered
+	public static int nmin = 9999999;	//min narrow bar width encountered
+	public static int wmax = -1;		//max wide bar width encountered
+	public static int wmin = 9999999;	//min wide bar width encountered
+	public static double[] I_n;			//Approximating interval for narrow bars
+	public static double[] I_w;			//Approximating interval for wide bars
+	public static int barCount;				//bar count for current case
+	public static int b0;				//first bar width used to define I_n and I_w
+	public static double r = 0.05;		//error tolerance
+	public static boolean reversed = false;	//indicates whether code is backwards in input
+	public static boolean startConsumed = false; //indicates whether the first character has been consumed
+	public static String curr = "";		//string to hold the bit string of the current character
+	public static String code = "";		//string to hold the code
+	public static Object currChar = null; //character used by consume current
+	public static int codeLen;			//length of the code in characters, computed from bar count c
 	
 	public static void makeMaps(){
+		/* populate the mappings 
+		 * bMap: bitString -> code character
+		 * bMapRev: reversedBitString -> code character
+		 * charWeights: character -> character weight for C and K check values*/
 		bMap = new HashMap<String, String>();
 		bMapRev = new HashMap<String, String>();
 		charWeights = new HashMap<Character, Integer>();
@@ -86,6 +88,7 @@ public class BarCodes3 {
 	
 	
 	public static char getC(String s){
+		//Build the C check value from code string s
 		int sum = 0;
 		int n = s.length();
 		for (int i=1; i<=n; i++){
@@ -98,6 +101,7 @@ public class BarCodes3 {
 		
 	}
 	public static char getK(String s){
+		//Build the K check value from code string s, which includes the C value
 		int sum = 0;
 		int n = s.length();
 		for (int i=1; i<=n; i++){
@@ -107,32 +111,20 @@ public class BarCodes3 {
 		if (val==10) return '-';
 		else return Integer.toString(val).charAt(0);
 	}
-	public static int getInt(BufferedReader scnr) throws IOException{
-		String s = "";
-		char r;
-		int x;
-		while((x = scnr.read()) != -1 && (r = (char)x) != ' '){
-			s += r;
-		}
-		try{
-			x = Integer.parseInt(s);
-			return x;
-		}
-		catch (Exception e){
-			throw new IOException("End of file encountered");
-		}
-	}
 	
 	public static boolean inInterval(double[] interval, int value){
+		//returns true if value lies in interval
 		return (value >= interval[0] && value <= interval[1]);
 	}
 	
 	public static int max(int a, int b){
+		//returns the max of inputs a and b
 		if (a>b) return a;
 		else if (b > a) return b;
 		else return a;
 	}
 	public static int min(int a, int b){
+		//returns the min of inputs a and b
 		if (a<b) return a;
 		else if (b < a) return b;
 		else return a;
@@ -162,14 +154,14 @@ public class BarCodes3 {
 	}
 	
 	public static void main(String[] args) throws IOException, BadCode {
-		makeMaps();//combile the bitString to character maps, and character weight map
+		makeMaps();//compile the bitString to character maps, and character weight map
 		String fileName = args[0];//get input file name
 		
 		Scanner scnr = new Scanner(new File(fileName));//build a scanner for this file
 		int currCase = 1;//start with case 1
-		c = scnr.nextInt();//read Case 1 input length
+		barCount = scnr.nextInt();//read Case 1 input length
 		
-		while(c!=0){//c will be 0 after last case and while will exit
+		while(barCount!=0){//barCount will be 0 after last case and while will exit
 			//reset parameters for next case
 			int onBar = 0; //tracks bar currently being processed in case an error is thrown
 			
@@ -180,22 +172,21 @@ public class BarCodes3 {
 			wmin = 9999999;
 			reversed = false;  //indicates whether code is backwards, set on start symbol consumption
 			startConsumed = false; //indicates whether start character has been consumed
-			curr = ""; //holds the bitstring of the current character whos bars are being processed
+			curr = ""; //holds the bitstring of the current character whose bars are being processed
 			code = ""; //holds the code
-			currChar = null; //
+			currChar = null; // used by consumeCurrent to store the character representation of current bit string
 			try{
-				codeLen = (int)((c+1)/6.0);//compute code length(in characters) from bar count c
+				codeLen = (int)((barCount+1)/6.0);//compute code length(in characters) from bar count c
 				int b0 = scnr.nextInt(); //get first bar width
 				
 				//Define intervals for valid narrow and wide bar widths, resp.
 				I_n = new double[] {b0*(1-r)/(1+r), b0*(1+r)/(1-r)};
 				I_w = new double[] {2*b0*(1-r)/(1+r), 2*b0*(1+r)/(1-r)};
 				
-				int bi = -1; // used in for loop to store width of ith bar
-				bi = b0; //set ith bar to first bar already read by scanner
-				for (int i = 0;i<c;i++){//loop over remaining bars
+				int bi = b0; // used in for loop to store width of ith bar, set to first bar width
+				for (int i = 0;i< barCount;i++){//loop over remaining bars of this case
 					if ((i+1) % 6 == 0){//This is a spacing character, consume curr
-						consumeCurrent(bi);
+						consumeCurrent(bi);//consumeCurrent also validates spacer bar bi
 					}
 					else{//This is not a spacing character
 						if (inInterval(I_n,bi)){//this is a narrow bar
@@ -211,27 +202,25 @@ public class BarCodes3 {
 						else throw new BadCode("Invalid bar width encountered");//bar not wide or narrow, bad
 					
 					}
-					if (i<c-1) {//if we aren't on the last bar (i==c-1)
+					if (i< barCount-1) {//if we aren't on the last bar (i==barcount-1)
 						bi = scnr.nextInt();//set bi for next run
 						onBar++;//increment onBar in case error occurs, allows remaining bars to be consumed
 					}
 					
 				}
 				
-				//still need to consume last current... this is because there is no trailing space
-				consumeCurrent(b0);
+				//still need to consume last current... this is because there is no trailing space to trigger consumption
+				consumeCurrent(b0);//no spacer to validate, just using known narrow bar b0
 				
 				//post loop validation of observed max/min
-				if (!((nmax/(1+r) <= nmin/(1-r)) &&
-					(wmax/(1+r) <= wmin/(1-r)) && 
-					(wmax/(1+r) <= 2*nmin/(1-r)) && 
-					(2*nmax/(1+r) <= wmin/(1-r)))){
-					
-					
+				if (!((nmax/(1+r) <= nmin/(1-r)) /* there are n candidates*/&&
+					(wmax/(1+r) <= wmin/(1-r))   /* there are w candidates*/&& 
+					(wmax/(1+r) <= 2*nmin/(1-r)) /* check for w=2n candidates*/&& 
+					(2*nmax/(1+r) <= wmin/(1-r)) /* check for w=2n candidates*/)){
 					throw new BadCode("Error Tolerance violated");
 				}
-				System.out.println("nmin:" + Integer.toString(nmin) + " nmax:" + Integer.toString(nmax));
-				System.out.println("wmin:" + Integer.toString(wmin) + " wmax:" + Integer.toString(wmax));
+				//System.out.println("nmin:" + Integer.toString(nmin) + " nmax:" + Integer.toString(nmax));
+				//System.out.println("wmin:" + Integer.toString(wmin) + " wmax:" + Integer.toString(wmax));
 				
 				//reverse the code if it was read backwards
 				if (reversed) code = new StringBuffer(code).reverse().toString();
@@ -256,12 +245,12 @@ public class BarCodes3 {
 				System.out.println("Case " + Integer.toString(currCase) + ": "+code.substring(1,codeLen-3));
 				currCase++;//increment to the next case
 				
-				c = scnr.nextInt();//read next counter, will be 0 at end and break while loop
+				barCount = scnr.nextInt();//read next counter, will be 0 at end and break while loop
 			}
 			catch (BadCode b){//handle bad code throws
 				//may still have cases waiting, need to consume the rest of the offender
-				for (int i = onBar+1;i<c;i++){scnr.nextInt();}//read remainder of the offending code
-				c = scnr.nextInt();//get next bar count
+				for (int i = onBar+1;i< barCount;i++){scnr.nextInt();}//read remainder of the offending code
+				barCount = scnr.nextInt();//get next bar count
 				//Print case results
 				System.out.println("Case " + Integer.toString(currCase) + ": "+ b.toString());
 				currCase++;//increment to next case
