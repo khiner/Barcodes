@@ -157,16 +157,21 @@ public class BarCodes3 {
 		else code += bMap.get(curr);//not reversed -> use forward mapping
 		curr = "";//reset current bit string curr to begin receiving bits for next character
 	}
-	
+
+    private static boolean checkBarCount(int barCount) {
+        return ((barCount + 1) % 6 == 0 && barCount >= 29 /*&& barCount <= 150*/);
+    }
+    
 	public static void main(String[] args) throws IOException, BadCode {
 		makeMaps();//compile the bitString to character maps, and character weight map
-		String fileName = args[0];//get input file name
-		
-		Scanner scnr = new Scanner(new File(fileName));//build a scanner for this file
+        long start = System.nanoTime();
+		String fileName = args[0];
+		Scanner scnr = new Scanner(new File(fileName));
 		int currCase = 1;//start with case 1
 		barCount = scnr.nextInt();//read Case 1 input length
-		
+        
 		while(barCount!=0){//barCount will be 0 after last case and while will exit
+            if (!checkBarCount(barCount)) throw new BadCode("bad code");
 			//reset parameters for next case
 			int onBar = 0; //tracks bar currently being processed in case an error is thrown
 			
@@ -248,7 +253,7 @@ public class BarCodes3 {
 					throw new BadCode("bad K");
 
 				//Print the code
-				System.out.println("Case " + Integer.toString(currCase) + ": "+code.substring(1,codeLen-3));
+				//System.out.println("Case " + Integer.toString(currCase) + ": "+code.substring(1,codeLen-3));
 				currCase++;//increment to the next case
 				
 				barCount = scnr.nextInt();//read next counter, will be 0 at end and break while loop
@@ -258,9 +263,14 @@ public class BarCodes3 {
 				for (int i = onBar+1;i< barCount;i++){scnr.nextInt();}//read remainder of the offending code
 				barCount = scnr.nextInt();//get next bar count
 				//Print case results
-				System.out.println("Case " + Integer.toString(currCase) + ": "+ b.toString());
+				//System.out.println("Case " + Integer.toString(currCase) + ": "+ b.toString());
 				currCase++;//increment to next case
 			}
 		}
-	}    
+        System.out.println("Version 3: " + (System.nanoTime() - start) + " ns");        
+	}
 }
+
+
+
+

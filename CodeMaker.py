@@ -163,7 +163,7 @@ f.write('0\n')
 f.close()
 
 # run BarCodes using the file
-cmd = ["java", "BarCodes3", args.file]
+cmd = ["java", "BarCodes", args.file]
 call(cmd)
     
 # print to command line as well if verbose option is set

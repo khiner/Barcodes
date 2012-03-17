@@ -2,6 +2,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Collections;
 import java.util.Arrays;
+import java.io.File;
+import java.util.Scanner;
 
 class BarCodes {
     /*
@@ -35,6 +37,7 @@ class BarCodes {
 
     // initialize the encoding->character map
     public static final Map<Encoding, Character> encodings;
+    public static final Map<Character, Integer> weights;    
     static {
         Map<Encoding, Character> map = new HashMap<Encoding, Character>();
         map.put(new Encoding(new byte[] {0,0,0,0,1}), '0');
@@ -50,10 +53,26 @@ class BarCodes {
         map.put(new Encoding(new byte[] {0,0,1,0,0}), '-');
         map.put(new Encoding(new byte[] {0,0,1,1,0}), 's');
         encodings = Collections.unmodifiableMap(map);
+        Map<Character, Integer> wMap = new HashMap<Character, Integer>();
+        wMap.put('0', 0);        
+        wMap.put('1', 1);
+        wMap.put('2', 2);
+        wMap.put('3', 3);
+        wMap.put('4', 4);
+        wMap.put('5', 5);
+        wMap.put('6', 6);
+        wMap.put('7', 7);
+        wMap.put('8', 8);
+        wMap.put('9', 9);
+        wMap.put('-', 10);
+        weights = Collections.unmodifiableMap(wMap);                
     }
     
-    private static int[] argsToInputs(String[] args, int startIndex) {
-        int numInputs = Integer.valueOf(args[startIndex]);
+    private static int[] argsToInputs(Scanner scanner) {
+        int numInputs = scanner.nextInt();
+        // if first int is 0, this is the end symbol. return 0
+        if (numInputs == 0) return new int[] {0};
+        
         /* args.length must be >= 30:
            1 int for number of regions
            10 for the start and stop encodings
@@ -61,11 +80,17 @@ class BarCodes {
            5 for the minimum one encoded char,
            and at least 4 separating bars
         */        
-        //        if ((numInputs + 1) % 6 != 0 || numInputs < 29 || numInputs > 150) return null;
-        int i = startIndex + 1;
-        if (i + numInputs > args.length) return null;
-        String[] strInputs = Arrays.copyOfRange(args, i, i + numInputs);
-        return convertToIntArray(strInputs);
+        if ((numInputs + 1) % 6 != 0 || numInputs < 29 /*|| numInputs > 150*/) {
+            // bad input, skip scanner foward to next input case
+            for (int i = 0; i < numInputs; i++)
+                scanner.nextInt();
+            return null;
+        }
+        int[] inputs = new int[numInputs];
+        for (int i = 0; i < numInputs; i++) {
+            inputs[i] = scanner.nextInt();
+        }
+        return inputs;
     }
 
     /*
@@ -225,36 +250,13 @@ class BarCodes {
 
         return new int[] {narrowMin, narrowMax, wideMin, wideMax};
     }
-
-    /*
-      Arg: string array (assumed to be integer strings)
-      Returns: int array
-    */
-    private static int[] convertToIntArray(String[] stringArray) {
-        int[] intArray = new int[stringArray.length];
-        for (int i = 0; i < intArray.length; i++) {
-            intArray[i] = Integer.parseInt(stringArray[i]);
-        }
-        return intArray;
-    }
-
-    private static int getWeight(char character) {
-        if (Character.isDigit(character)) {
-            return Character.getNumericValue(character);
-        } else if (character == '-') {
-            return 10;
-        } else {
-            System.out.println("Weight problem.  No pun.");
-            return -1;
-        }
-    }
     
     private static boolean checkC(char[] characters) {
         int n = characters.length - 2;
-        int c = getWeight(characters[n]);
+        int c = weights.get(characters[n]);
         int sum = 0;
         for (int i = 1; i < n + 1; i++) {
-            sum += ((n - i)%10 + 1)*getWeight(characters[i - 1]);
+            sum += ((n - i)%10 + 1)*weights.get(characters[i - 1]);
         }
         sum %= 11;
         return (c == sum);
@@ -262,10 +264,10 @@ class BarCodes {
 
     private static boolean checkK(char[] characters) {
         int n = characters.length - 1;
-        int k = getWeight(characters[n]);
+        int k = weights.get(characters[n]);
         int sum = 0;        
         for (int i = 1; i < n + 1; i++) {
-            sum += ((n - i)%9 + 1)*getWeight(characters[i - 1]);
+            sum += ((n - i)%9 + 1)*weights.get(characters[i - 1]);
         }
         sum %= 11;
         return (k == sum);
@@ -292,29 +294,36 @@ class BarCodes {
         if (byteEncodedInputs == null) return bad("code", caseNum);
         char[] characters = convertToCharacters(byteEncodedInputs);
         if (characters == null) return bad("code", caseNum);
-        if (!checkC(characters)) return bad("c", caseNum);
-        if (!checkK(characters)) return bad("k", caseNum);
+        if (!checkC(characters)) return bad("C", caseNum);
+        if (!checkK(characters)) return bad("K", caseNum);
         characters = Arrays.copyOfRange(characters, 0, characters.length - 2);
         return good(characters, caseNum);        
     }
     
-    public static void run(String[] args) {
-        int n = 0, caseNum = 1;
-        do {
-            int[] inputs = argsToInputs(args, n);
-            if (inputs == null || inputs.length == 0) {
+    public static void run(Scanner scanner) {        
+        int caseNum = 1;
+        while (true) {
+            int[] inputs = argsToInputs(scanner);
+            if (inputs == null) {
                 System.out.println(bad("code", caseNum));
-                System.exit(0);
-            }
+                continue;
+            } else if (inputs[0] == 0) break; // end of input signal
+            
             runInputCase(inputs, caseNum);
-            n += inputs.length + 1;            
             caseNum++;
-        } while (n < args.length);
+        }
     }
     
     public static void main(String[] args) {
         long start = System.nanoTime();
-        BarCodes.run(args);
-        System.out.println("Version 1: " + (System.nanoTime() - start) + " ns");
+ 		String fileName = args[0];
+        try {
+            Scanner scanner = new Scanner(new File(fileName));       
+            BarCodes.run(scanner);
+            System.out.println("Version 1: " + (System.nanoTime() - start) + " ns");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
