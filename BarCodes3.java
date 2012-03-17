@@ -4,10 +4,15 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 final class BadCode extends Exception{
+    String msg;
 	//Exception for a bad code
 	public BadCode(String msg){
-		super(msg);
+		this.msg = msg;
 	}
+
+    public String toString() {
+        return msg;
+    }
 }
 
 public class BarCodes3 {
@@ -15,9 +20,9 @@ public class BarCodes3 {
 	public static HashMap<String,String> bMapRev;// reversedBitString -> codeCharacter
 	public static HashMap<Character,Integer> charWeights;// character -> character weight
 	public static int nmax = -1;		//max narrow bar width encountered
-	public static int nmin = 9999999;	//min narrow bar width encountered
+	public static int nmin = Integer.MAX_VALUE;	//min narrow bar width encountered
 	public static int wmax = -1;		//max wide bar width encountered
-	public static int wmin = 9999999;	//min wide bar width encountered
+	public static int wmin = Integer.MAX_VALUE;	//min wide bar width encountered
 	public static double[] I_n;			//Approximating interval for narrow bars
 	public static double[] I_w;			//Approximating interval for wide bars
 	public static int barCount;				//bar count for current case
@@ -105,10 +110,10 @@ public class BarCodes3 {
 		int sum = 0;
 		int n = s.length();
 		for (int i=1; i<=n; i++){
-			sum += ((n-i) % 9 + 1)* charWeights.get(s.charAt(i-1));
+			sum += ((n-i) % 9 + 1)*charWeights.get(s.charAt(i-1));
 		}
 		int val = sum % 11;
-		if (val==10) return '-';
+		if (val == 10) return '-';
 		else return Integer.toString(val).charAt(0);
 	}
 	
@@ -119,22 +124,22 @@ public class BarCodes3 {
 	
 	public static int max(int a, int b){
 		//returns the max of inputs a and b
-		if (a>b) return a;
-		else if (b > a) return b;
-		else return a;
+		if (a >= b) return a;
+		else return b;
 	}
+    
 	public static int min(int a, int b){
 		//returns the min of inputs a and b
-		if (a<b) return a;
-		else if (b < a) return b;
-		else return a;
+		if (a <= b) return a;
+		else return b;
 	}
+    
 	public static void consumeCurrent(int bi) throws BadCode{
 		//this method consumes the current bit string by generating the corresponding
 		//character and appending it to String code
 		
 		//validate that the current bar is a spacer
-		if (!inInterval(I_n,bi)) {throw new BadCode("Invalid spacer bar width");}
+		if (!inInterval(I_n,bi)) {throw new BadCode("bad code");}
 		nmax = max(bi,nmax);//check for narrow max/min
 		nmin = min(bi, nmin);
 		if (!startConsumed){//First consumption, expect start character
@@ -146,7 +151,7 @@ public class BarCodes3 {
 			else if ((currChar = bMapRev.get(curr)) != null && (String)currChar == "S"){//code is reversed
 				startConsumed = reversed = true;//start consumed and code is reversed
 			}
-			else throw new BadCode("Invalid Start/Stop symbol");//start symbol is invalid
+			else throw new BadCode("bad code");//start symbol is invalid
 		}
 		if (reversed) code += bMapRev.get(curr);//reversed -> use reversed mapping
 		else code += bMap.get(curr);//not reversed -> use forward mapping
@@ -167,9 +172,9 @@ public class BarCodes3 {
 			
 			//max/min observed values for narrow and wide bars, resp.
 			nmax = -1;
-			nmin = 9999999;
+			nmin = Integer.MAX_VALUE;
 			wmax = -1;
-			wmin = 9999999;
+			wmin = Integer.MAX_VALUE;
 			reversed = false;  //indicates whether code is backwards, set on start symbol consumption
 			startConsumed = false; //indicates whether start character has been consumed
 			curr = ""; //holds the bitstring of the current character whose bars are being processed
@@ -199,10 +204,10 @@ public class BarCodes3 {
 							wmin = min(wmin, bi);
 							curr += "1";//append 1 to current bit string
 						}
-						else throw new BadCode("Invalid bar width encountered");//bar not wide or narrow, bad
+						else throw new BadCode("bad code");//bar not wide or narrow, bad
 					
 					}
-					if (i< barCount-1) {//if we aren't on the last bar (i==barcount-1)
+					if (i < barCount-1) {//if we aren't on the last bar (i==barcount-1)
 						bi = scnr.nextInt();//set bi for next run
 						onBar++;//increment onBar in case error occurs, allows remaining bars to be consumed
 					}
@@ -213,11 +218,11 @@ public class BarCodes3 {
 				consumeCurrent(b0);//no spacer to validate, just using known narrow bar b0
 				
 				//post loop validation of observed max/min
-				if (!((nmax/(1+r) <= nmin/(1-r)) /* there are n candidates*/&&
-					(wmax/(1+r) <= wmin/(1-r))   /* there are w candidates*/&& 
-					(wmax/(1+r) <= 2*nmin/(1-r)) /* check for w=2n candidates*/&& 
-					(2*nmax/(1+r) <= wmin/(1-r)) /* check for w=2n candidates*/)){
-					throw new BadCode("Error Tolerance violated");
+				if ((nmax/(1+r) > nmin/(1-r)) /* there are n candidates*/&&
+					(wmax/(1+r) > wmin/(1-r))   /* there are w candidates*/|| 
+					(wmax/(1+r) > 2*nmin/(1-r)) /* check for w=2n candidates*/|| 
+					(2*nmax/(1+r) > wmin/(1-r)) /* check for w=2n candidates*/){
+					throw new BadCode("bad code");// Error Tolerance violated
 				}
 				//System.out.println("nmin:" + Integer.toString(nmin) + " nmax:" + Integer.toString(nmax));
 				//System.out.println("wmin:" + Integer.toString(wmin) + " wmax:" + Integer.toString(wmax));
@@ -226,8 +231,9 @@ public class BarCodes3 {
 				if (reversed) code = new StringBuffer(code).reverse().toString();
 				
 				//verify start/stop symbols, one was already checked when startConsumed set to true
-				if (!(code.charAt(0) == 'S' && code.charAt(codeLen-1)=='S')){
-					throw new BadCode("Invalid Start/Stop Symbol");}
+				if (code.charAt(0) != 'S' || code.charAt(codeLen-1) != 'S'){
+					throw new BadCode("bad code"); // Invalid Start/Stop Symbol
+                } 
 				
 				//get the C and K values from the code
 				char checkC = code.charAt(codeLen-3);
@@ -235,11 +241,11 @@ public class BarCodes3 {
 				
 				//compare C value
 				if (checkC != getC(code.substring(1,codeLen-3)))
-					throw new BadCode("Bad C value");
+					throw new BadCode("bad C");
 				
 				//compare K value
 				if (checkK != getK(code.substring(1,codeLen-2)))
-					throw new BadCode("Bad K value");
+					throw new BadCode("bad K");
 
 				//Print the code
 				System.out.println("Case " + Integer.toString(currCase) + ": "+code.substring(1,codeLen-3));
@@ -256,5 +262,5 @@ public class BarCodes3 {
 				currCase++;//increment to next case
 			}
 		}
-	}
+	}    
 }

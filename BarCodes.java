@@ -61,7 +61,7 @@ class BarCodes {
            5 for the minimum one encoded char,
            and at least 4 separating bars
         */        
-        if ((numInputs + 1) % 6 != 0 || numInputs < 29 || numInputs > 150) return null;
+        //        if ((numInputs + 1) % 6 != 0 || numInputs < 29 || numInputs > 150) return null;
         int i = startIndex + 1;
         if (i + numInputs > args.length) return null;
         String[] strInputs = Arrays.copyOfRange(args, i, i + numInputs);
@@ -306,15 +306,15 @@ class BarCodes {
                 System.out.println(bad("code", caseNum));
                 System.exit(0);
             }
-            System.out.println(runInputCase(inputs, caseNum));
+            runInputCase(inputs, caseNum);
             n += inputs.length + 1;            
             caseNum++;
         } while (n < args.length);
     }
     
     public static void main(String[] args) {
-        //        long start = System.nanoTime();
+        long start = System.nanoTime();
         BarCodes.run(args);
-        //        System.out.println("Total time (ns): " + (System.nanoTime() - start));
+        System.out.println("Version 1: " + (System.nanoTime() - start) + " ns");
     }
 }

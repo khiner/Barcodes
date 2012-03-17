@@ -77,7 +77,7 @@ class BarCodes2 {
            5 for the minimum one encoded char,
            and at least 4 separating bars
         */        
-        if ((c + 1) % 6 != 0 || c < 29 || c > 150) return null;
+        //        if ((c + 1) % 6 != 0 || c < 29 || c > 150) return null;
         int i = startIndex + 1;
         if (i + c > args.length) return null;
         String[] strInputs = Arrays.copyOfRange(args, i, i + c);
@@ -147,8 +147,8 @@ class BarCodes2 {
         }
 
         // Post-Loop validation
-        if ((int)(n_max/(1 + r)) > (int)(n_min/(1 - r)) || (int)(w_max/(1 + r)) > (int)(w_min/(1 - r))
-            /*|| (int)(w_min/(1 - r)) >= (int)(2*n_max/(1 + r))*/) {
+        if (n_max/(1 + r) > n_min/(1 - r) || w_max/(1 + r) > w_min/(1 - r)
+            || w_min/(1 - r) < 2*n_max/(1 + r)) {
             return null;  // observed max/mins violate tolerance r and/or criterion w = 2n
         }
         if (reversed) {
@@ -245,15 +245,15 @@ class BarCodes2 {
                 System.out.println(bad("code", caseNum));
                 System.exit(0);
             }
-            System.out.println(runInputCase(inputs, caseNum));
+            runInputCase(inputs, caseNum);
             n += inputs.length + 1;            
             caseNum++;
         } while (n < args.length);
     }
     
     public static void main(String[] args) {
-        //        long start = System.nanoTime();
-        BarCodes.run(args);
-        //        System.out.println("Total time (ns): " + (System.nanoTime() - start));
+        long start = System.nanoTime();
+        BarCodes2.run(args);
+        System.out.println("Version 2: " + (System.nanoTime() - start) + " ns");
     }
 }

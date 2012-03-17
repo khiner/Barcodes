@@ -56,6 +56,9 @@ def randCode(maxLength):
     length = random.randint(1, maxLength)
     return ''.join(random.choice(string.digits + '-') for i in xrange(length))
 
+def code(length):
+    return ''.join(random.choice(string.digits + '-') for i in xrange(length))
+    
 def getCodeCK(dirtyCode, badC=False, badK=False):
     code = re.sub(r"[^0-9\-]","",dirtyCode)     # remove invalid characters from input
     chars = string.digits + '-'
@@ -105,7 +108,6 @@ def genValues(codeCK):
 
     for b in codeCKBitStr:              #loop over bits characters in code bit string
         values.append(fudge(width[b]))  #get width for this bit, fudge it, then append to the list
-
     if random.random() > 0.50:          #the code could be backwards, reverse it half the time
         values.reverse()
         
@@ -116,7 +118,7 @@ parser.add_argument('-r', '--numRand', type=int, default=0, help='if you want ra
 parser.add_argument('-c', '--code', nargs='+', help='specific codes you would like to test.  If random cases are also generated, these will be the first cases.')
 parser.add_argument('-m', '--maxLength', type=int, help="maximum length of the test strings. \
                     default is 21 for max input length of 150 (150/6 = 25, sub 4 for start/stop/c/k).", default=21)
-parser.add_argument('-f', '--file', help='optionally print output to the specified file.')
+parser.add_argument('-f', '--file', default='testInput', help="file name to write test input to.  default is 'testInput'")
 parser.add_argument('-t', '--testFile', help='optionally print the expected java output to a the specified file')
 parser.add_argument('-v', '--verbose', action='store_true', help='print the values to command line')
 args = parser.parse_args()
@@ -150,39 +152,34 @@ for i in xrange(args.numRand):
     values.insert(0, len(values)) # first number is length of input
     allValues.append(values)
 
-cmd = ["java"]
-cmd.append("BarCodes")
+# output to file and run BarCodes
+f = open(args.file, 'w')
 for values in allValues:
-    cmd += [str(v) for v in values]
-call(cmd)
+    f.write(str(values[0]) + '\n')
+    for v in values[1:]:
+        f.write(str(v) + " ")
+    f.write('\n')
+f.write('0\n')
+f.close()
 
+# run BarCodes using the file
+cmd = ["java", "BarCodes3", args.file]
+call(cmd)
+    
 # print to command line as well if verbose option is set
 if args.verbose:
-    for values in allValues:
-        print str(values[0])
-        for v in values[1:]:    
-            print str(v),
-        print ''
-
-# file ouput if filename given in command line
-if args.file:
-    f = open(args.file, 'w')
-    for values in allValues:
-        f.write(str(values[0]) + '\n')
-        for v in values[1:]:
-            f.write(str(v) + " ")
-        f.write('\n')
-    f.close()
-
+    for line in open(args.file, 'r').readlines():
+        print line    
+    
 if args.testFile:
     f = open(args.testFile, 'w')
     # write expected output of each case to the file
     for i in xrange(len(allCodes)):
         if allCodes[i] == 'badC':
-            f.write('Case ' + str(i + 1) + ': bad c\n')
+            f.write('Case ' + str(i + 1) + ': bad C\n')
         elif allCodes[i] == 'badK':
-            f.write('Case ' + str(i + 1) + ': bad k\n')
+            f.write('Case ' + str(i + 1) + ': bad K\n')
         else:
             f.write('Case ' + str(i + 1) + ': ' + allCodes[i] + '\n')
-                            
     f.close()
+    
