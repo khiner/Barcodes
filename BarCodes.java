@@ -54,7 +54,7 @@ class BarCodes {
         map.put(new Encoding(new byte[] {0,0,1,1,0}), 's');
         encodings = Collections.unmodifiableMap(map);
         Map<Character, Integer> wMap = new HashMap<Character, Integer>();
-        wMap.put('0', 0);        
+        wMap.put('0', 1);        
         wMap.put('1', 1);
         wMap.put('2', 2);
         wMap.put('3', 3);
@@ -80,7 +80,7 @@ class BarCodes {
            5 for the minimum one encoded char,
            and at least 4 separating bars
         */        
-        if ((numInputs + 1) % 6 != 0 || numInputs < 29 /*|| numInputs > 150*/) {
+        if ((numInputs + 1) % 6 != 0 || numInputs < 29 || numInputs > 150) {
             // bad input, skip scanner foward to next input case
             for (int i = 0; i < numInputs; i++)
                 scanner.nextInt();
@@ -309,7 +309,7 @@ class BarCodes {
                 continue;
             } else if (inputs[0] == 0) break; // end of input signal
             
-            runInputCase(inputs, caseNum);
+            System.out.println(runInputCase(inputs, caseNum));
             caseNum++;
         }
     }
@@ -318,9 +318,9 @@ class BarCodes {
         long start = System.nanoTime();
  		String fileName = args[0];
         try {
-            Scanner scanner = new Scanner(new File(fileName));       
+            Scanner scanner = new Scanner(new File(fileName));
             BarCodes.run(scanner);
-            System.out.println("Version 1: " + (System.nanoTime() - start) + " ns");
+            //System.out.println("Version 1: " + (System.nanoTime() - start) + " ns");
         }
         catch (Exception e) {
             e.printStackTrace();

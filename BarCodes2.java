@@ -96,7 +96,7 @@ class BarCodes2 {
            5 for the minimum one encoded char,
            and at least 4 separating bars
         */        
-        if ((numInputs + 1) % 6 != 0 || numInputs < 29 /*|| numInputs > 150*/) {
+        if ((numInputs + 1) % 6 != 0 || numInputs < 29 || numInputs > 150) {
             // bad input, skip scanner foward to next input case
             for (int i = 0; i < numInputs; i++)
                 scanner.nextInt();
@@ -243,12 +243,12 @@ class BarCodes2 {
         int caseNum = 1;
         while (true) {
             int[] inputs = argsToInputs(scanner);
-            if (inputs == null) {
+            if (inputs == null || inputs.length == 0) {
                 System.out.println(bad("code", caseNum));
                 continue;
             } else if (inputs[0] == 0) break; // end of input signal
             
-            runInputCase(inputs, caseNum);
+            System.out.println(runInputCase(inputs, caseNum));
             caseNum++;
         }
     }
@@ -259,7 +259,7 @@ class BarCodes2 {
        try {
            Scanner scanner = new Scanner(new File(fileName));       
            BarCodes2.run(scanner);
-           System.out.println("Version 2: " + (System.nanoTime() - start) + " ns");
+           //System.out.println("Version 2: " + (System.nanoTime() - start) + " ns");
        }
        catch (Exception e) {
            e.printStackTrace();

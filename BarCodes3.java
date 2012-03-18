@@ -159,7 +159,7 @@ public class BarCodes3 {
 	}
 
     private static boolean checkBarCount(int barCount) {
-        return ((barCount + 1) % 6 == 0 && barCount >= 29 /*&& barCount <= 150*/);
+        return ((barCount + 1) % 6 == 0 && barCount >= 29 && barCount <= 150);
     }
     
 	public static void main(String[] args) throws IOException, BadCode {
@@ -253,7 +253,7 @@ public class BarCodes3 {
 					throw new BadCode("bad K");
 
 				//Print the code
-				//System.out.println("Case " + Integer.toString(currCase) + ": "+code.substring(1,codeLen-3));
+				System.out.println("Case " + Integer.toString(currCase) + ": "+code.substring(1,codeLen-3));
 				currCase++;//increment to the next case
 				
 				barCount = scnr.nextInt();//read next counter, will be 0 at end and break while loop
@@ -263,11 +263,11 @@ public class BarCodes3 {
 				for (int i = onBar+1;i< barCount;i++){scnr.nextInt();}//read remainder of the offending code
 				barCount = scnr.nextInt();//get next bar count
 				//Print case results
-				//System.out.println("Case " + Integer.toString(currCase) + ": "+ b.toString());
+				System.out.println("Case " + Integer.toString(currCase) + ": "+ b.toString());
 				currCase++;//increment to next case
 			}
 		}
-        System.out.println("Version 3: " + (System.nanoTime() - start) + " ns");        
+        //System.out.println("Version 3: " + (System.nanoTime() - start) + " ns");        
 	}
 }
 

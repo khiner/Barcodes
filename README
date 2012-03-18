@@ -1,8 +1,8 @@
 To compile,
 $ javac BarCodes.java
 
-To run with custom input,
-$ java BarCodes <args>
+To run with custom input file,
+$ java BarCodes <fileName>
 
 To run with automatically generated test cases,
 $ python CodeMaker.py [-h] [-r NUMRAND] [-c CODE [CODE ...]] [-m MAXLENGTH]
@@ -17,8 +17,11 @@ optional arguments:
                         specific codes you would like to test. If random cases
                         are also generated, these will be the first cases.
   -m MAXLENGTH, --maxLength MAXLENGTH
-                        maximum length of the test strings. default is 20.
-  -f FILE, --file FILE  optionally print output to the specified file.
+                        maximum length of the test strings. default is 21 for
+                        max input length of 150 (150/6 = 25, sub 4 for
+                        start/stop/c/k).
+  -f FILE, --file FILE  file name to write test input to. default is
+                        'testInput'
   -t TESTFILE, --testFile TESTFILE
                         optionally print the expected java output to a the
                         specified file
@@ -26,22 +29,22 @@ optional arguments:
 
 
 A testing strategy:
-$ python CodeMaker.py [OTHER ARGS] --testFile expectedOutputs > actualOutputs
+$ python CodeMaker.py [OTHER ARGS] -t expectedOutputs > actualOutputs
 $ diff expectedOutputs actualOutputs
 
 EXAMPLE 1 (simple): This example generates and runs one randomly generated
-example, with the default maximum length of 20 characters.  No file output,
-and the barcode output is displayed in stdout.
+example, with the default maximum length of 21 characters.  Input file 
+is output to 'testInput', and the Java output is displayed in stdout.
 
 $ python CodeMader.py
 
 EXAMPLE 2 (complex):  This example generates the test cases 123, ---, and
 123-45, followed by 200 randomly generated examples with a max string
-length of 50. The output that is processed by the Java code is written to
-the file 'outputs', the expected output is written to 'expectedOutputs',
+length of 50. The input that is processed by the Java code is written to
+the file 'inputs', the expected output is written to 'expectedOutputs',
 and the output of the Java code is piped to 'actualOutputs'.
 
-$ python CodeMaker.py --code 123 --- 123-45 --numRand 200 --maxLength 50 --file outputs --testFile expectedOutputs > actualOutputs 
+$ python CodeMaker.py --code 123 --- 123-45 --numRand 200 --maxLength 50 --file inputs --testFile expectedOutputs > actualOutputs 
 
 Equivalent syntax:
 
@@ -53,36 +56,38 @@ $ diff expectedOutputs actualOutputs
 should produce no output.
 
 *****ALL BAD INPUT CASES THIS CODE SHOULD CATCH*****
-1) input argument length is less than 30
+1) 2) numBars for any case is less than 30
    (1 for num inputs, 10 for start/stop, 10 for C/K, 5 for min 1 encoded char, >=4 separating bars)
 
-2) 'number of inputs' argument of any case is 29 (above - num inputs arg)
+2) numBars for any case is not divisible by 6
 
-3) last input case has less regions than its first integer argument
+3) numBars for any case is greater than 200 (specs)
+
+4) last input case has less regions than its first integer argument
    (with only space delimiters, this can only be checked for last input,
     since the starting int of the next case cannot be differentiated from
     a bar encoding of the current case)
 
-4) all inputs are the same value (no gaps between any values)
+5) all inputs are the same value (no gaps between any values)
 
-5) any values outside of range [1, 200]
+6) any values outside of range [1, 200]
 
-6) if no number within the lower range satisfies:
+7) if no number within the lower range satisfies:
     1) 5% in either direction is still inside the lower range, and
     2) 5% in either direction of 2X that value is still inside the
        upper range
 
-7) first input bar is wide (regardless of reversed ordering)
+8) first input bar is wide (regardless of reversed ordering)
 
-8) input does not start and end with start/stop character
+9) input does not start and end with start/stop character
 
-9) illegal character endocing (no character found for any 5 byte string)
+10) illegal character endocing (no character found for any 5 byte string)
 
-10) separating bar is wide (could mean it's there and wide, or missing, and
+11) separating bar is wide (could mean it's there and wide, or missing, and
    the first bar of the next character is wide.  we don't stick around to
    find the truth.  just bail!)
 
-11) separating bar is missing (like above, but even if first bar of next
+12) separating bar is missing (like above, but even if first bar of next
     encoded character is narrow, the looping will get screwed up, and this
     will be caught.)
 
