@@ -32,6 +32,11 @@ A testing strategy:
 $ python CodeMaker.py [OTHER ARGS] -t expectedOutputs > actualOutputs
 $ diff expectedOutputs actualOutputs
 
+***NOTE ON TESTING***
+CodeMaker.py generates about a third each of bad C, bad K, and correct
+cases.  If bad code is desired, we recommend manually altering the values
+that are generated in 'testInput' after running the script.
+
 EXAMPLE 1 (simple): This example generates and runs one randomly generated
 example, with the default maximum length of 21 characters.  Input file 
 is output to 'testInput', and the Java output is displayed in stdout.
