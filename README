@@ -1,8 +1,10 @@
 To compile,
-$ javac BarCodes.java
+$ javac BarCodes2.java
 
 To run with custom input file,
-$ java BarCodes <fileName>
+$ java BarCodes2 <fileName>
+
+Included is a test input file called 'testInput'.
 
 To run with automatically generated test cases,
 $ python CodeMaker.py [-h] [-r NUMRAND] [-c CODE [CODE ...]] [-m MAXLENGTH]

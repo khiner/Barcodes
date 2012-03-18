@@ -218,18 +218,25 @@ class BarCodes2 {
     }
     
     /*
-      Output correctly formatted error with the given case number and type
-      and exit w/o error
-      Type should be 'code', 'c', or 'k'      
+     * return formatted error with the given case number and type
+     * Type should be 'code', 'c', or 'k'      
     */
     private static String bad(String type, int caseNum) {
         return new String("Case " + caseNum + ": bad " + type);
     }
-
+    
+    /*
+      return correctly formatted string with Case: <caseNum> + barcode string     
+    */
     private static String good(char[] characters, int caseNum) {
         return new String("Case " + caseNum + ": " + String.valueOf(characters));
     }
 
+    /**
+     * convert one barcode case to characters, check for bad code,
+     * bad C and bad K.
+     * Return the output string to print for this case
+     */
     private static String runInputCase(int[] inputs, int caseNum) {
         char[] characters = convertToCharacters(inputs);
         if (characters == null) return bad("code", caseNum);
@@ -239,6 +246,10 @@ class BarCodes2 {
         return good(characters, caseNum);        
     }
 
+    /**
+     * Using the given scanner, iterate through all input cases,
+     * printing the correctly formatted outputs for each case
+     */
     public static void run(Scanner scanner) {        
         int caseNum = 1;
         while (true) {
@@ -254,9 +265,9 @@ class BarCodes2 {
     }
     
     public static void main(String[] args) {
-       long start = System.nanoTime();
-       String fileName = args[0];
+       // long start = System.nanoTime(); // for timing
        try {
+           String fileName = args[0];           
            Scanner scanner = new Scanner(new File(fileName));       
            BarCodes2.run(scanner);
            //System.out.println("Version 2: " + (System.nanoTime() - start) + " ns");
